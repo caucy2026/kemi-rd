@@ -21,11 +21,11 @@
 
 | 文档名称 | 核心职责与关键能力 |
 | :--- | :--- |
-| 📄 **[dev-iron-rules.md](./dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底），杜绝退缩与未验证交付。 |
-| 📄 **[chip.md](./chip.md)** | **芯片平台 & 双屏异显实战手册（主文档）**：双 Activity & Presentation 架构、D2 误启动硬件级反射重定向（`setLaunchDisplayId`）、生命周期与 `Process.killProcess` 进程清理、WiFi ADB 部署与踩坑全集。 |
-| 📄 **[dscr.md](./dscr.md)** | **免弹窗无感双屏录制**：基于 `SurfaceControl.Transaction` 隐藏 API 的底层录影方案，直接绑定 SurfaceFlinger 图层栈自动灌帧硬编码，无需 `MediaProjection` 弹窗。 |
-| 📄 **[iflytek_asr_interface_doc.md](./iflytek_asr_interface_doc.md)** | **系统级语音听写指南**：基于 `Settings.Global` 凭证共享，无需应用申请 Key，支持“按住说话”（Hold-to-Speak）与“自动聆听”（Auto-Listen）状态机。 |
-| 📄 **[rule.md](./rule.md)** | **开发行为规范（CLAUDE.md）**：保持代码精简干净，外科手术式修改，严禁过度设计。 |
+| 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底），杜绝退缩与未验证交付。 |
+| 📄 **[chip.md](./md/chip.md)** | **芯片平台 & 双屏异显实战手册（主文档）**：双 Activity & Presentation 架构、D2 误启动硬件级反射重定向（`setLaunchDisplayId`）、生命周期与 `Process.killProcess` 进程清理、WiFi ADB 部署与踩坑全集。 |
+| 📄 **[dscr.md](./md/dscr.md)** | **免弹窗无感双屏录制**：基于 `SurfaceControl.Transaction` 隐藏 API 的底层录影方案，直接绑定 SurfaceFlinger 图层栈自动灌帧硬编码，无需 `MediaProjection` 弹窗。 |
+| 📄 **[iflytek_asr_interface_doc.md](./md/iflytek_asr_interface_doc.md)** | **系统级语音听写指南**：基于 `Settings.Global` 凭证共享，无需应用申请 Key，支持“按住说话”（Hold-to-Speak）与“自动聆听”（Auto-Listen）状态机。 |
+| 📄 **[rule.md](./md/rule.md)** | **开发行为规范（CLAUDE.md）**：保持代码精简干净，外科手术式修改，严禁过度设计。 |
 
 ---
 
@@ -51,7 +51,7 @@
 1. **引入上下文**：将本仓库或文档添加到 AI Agent（如 Antigravity、Cursor）的上下文规则中。
 2. **自然语言交互**：直接向 AI 提出业务需求，例如：
    > 💬 *“帮我用双 Activity 架构写一个双屏应用：主屏显示控制面板，副屏显示 3D 地球；如果被误启动到副屏要能自动切回主屏。副屏退出时通知主屏弹窗确认。”*
-3. **AI 自动套用防呆模版**：AI 会自动提取 `chip.md` 中的架构代码与防呆逻辑，遵循 `dev-iron-rules.md` 生成无 Bug 代码。
+3. **AI 自动套用防呆模版**：AI 会自动提取 `md/chip.md` 中的架构代码与防呆逻辑，遵循 `md/dev-iron-rules.md` 生成无 Bug 代码。
 4. **真机闭环验证**：使用下文脚本一键部署测试。
 
 ---
