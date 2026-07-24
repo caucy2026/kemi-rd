@@ -15,6 +15,19 @@
 
 本项目封装了基于 **Rockchip RK356x** 与 **HiSilicon V900** 芯片平台（Android 12）开发双屏异显应用时的所有架构模板、底层隐藏 API 调优、系统级能力（录影、语音听写）以及大量真机踩坑避坑经验。把本知识库作为上下文提供给 AI，即可通过**自然语言（Vibe Coding）**极速生成专业、稳健、无 Bug 的双屏应用。
 
+## 📁 项目目录结构
+
+```text
+kemi-rd/
+├── README.md                      # 项目根主页指南
+└── md/                            # 核心 Markdown 技术与规范文档
+    ├── chip.md                    # 芯片平台 & 双屏异显实战手册
+    ├── dev-iron-rules.md          # 底层开发铁律 (路径锁定 / 闭环交付 / 死磕到底)
+    ├── dscr.md                    # 免弹窗无感双屏录制
+    ├── iflytek_asr_interface_doc.md # 系统级语音听写对接指南
+    └── rule.md                    # 开发行为规范 (CLAUDE.md)
+```
+
 ---
 
 ## 📚 知识库文档索引
