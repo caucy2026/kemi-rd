@@ -20,11 +20,13 @@
 ```text
 kemi-rd/
 ├── README.md                      # 项目根主页指南
+├── reseach.md                     # 双屏开源组合与 6G+A73 硬件算力调研报告
 └── md/                            # 核心 Markdown 技术与规范文档
     ├── chip.md                    # 芯片平台 & 双屏异显实战手册
     ├── dev-iron-rules.md          # 底层开发铁律 (路径锁定 / 闭环交付 / 死磕到底)
     ├── dscr.md                    # 免弹窗无感双屏录制
     ├── iflytek_asr_interface_doc.md # 系统级语音听写对接指南
+    ├── reseach.md                 # 硬件算力与开源组合调研报告 (副本)
     └── rule.md                    # 开发行为规范 (CLAUDE.md)
 ```
 
@@ -34,6 +36,7 @@ kemi-rd/
 
 | 文档名称 | 核心职责与关键能力 |
 | :--- | :--- |
+| 📄 **[reseach.md](./reseach.md)** | **硬件算力与开源组合调研报告**：结合 V900/RK356x 芯片（6G RAM, 8核 A73, Mali-G52）精准评估 5 大双屏开源项目组合的 CPU/GPU 内存负载。 |
 | 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底），杜绝退缩与未验证交付。 |
 | 📄 **[chip.md](./md/chip.md)** | **芯片平台 & 双屏异显实战手册（主文档）**：双 Activity & Presentation 架构、D2 误启动硬件级反射重定向（`setLaunchDisplayId`）、生命周期与 `Process.killProcess` 进程清理、WiFi ADB 部署与踩坑全集。 |
 | 📄 **[dscr.md](./md/dscr.md)** | **免弹窗无感双屏录制**：基于 `SurfaceControl.Transaction` 隐藏 API 的底层录影方案，直接绑定 SurfaceFlinger 图层栈自动灌帧硬编码，无需 `MediaProjection` 弹窗。 |
