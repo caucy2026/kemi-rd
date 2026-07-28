@@ -26,6 +26,7 @@ jobs:
             autoconf automake libtool pkg-config \
             nasm yasm \
             bison flex gperf \
+            unzip zip \
             libgl1-mesa-dev libglu1-mesa-dev \
             ccache
           ccache -M 2G
@@ -53,17 +54,12 @@ jobs:
             echo "Downloading NDK r27c..."
             curl -sL -o /tmp/$NDK_ZIP "$NDK_URL"
             sudo mkdir -p "$NDK_DIR"
-            sudo unzip -qo /tmp/$NDK_ZIP -d "$SDK/ndk/"
-            # Google zip extracts to android-ndk-r27c/, rename to versioned dir
-            extracted=$(ls -d "$SDK/ndk/android-ndk-r27c" 2>/dev/null || echo '')
-            if [ -n "$extracted" ] && [ "$extracted" != "$NDK_DIR" ]; then
-              sudo mv "$extracted" "$NDK_DIR"
-            fi
-            rm -f /tmp/$NDK_ZIP
+            sudo unzip -qo /tmp/$NDK_ZIP -d /tmp/ndk-extract/
+            sudo mv /tmp/ndk-extract/android-ndk-r27c/* "$NDK_DIR/"
+            rm -rf /tmp/$NDK_ZIP /tmp/ndk-extract
           fi
-          test -f "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" || { echo "NDK clang missing at $NDK_DIR"; ls "$NDK_DIR/" 2>/dev/null; exit 1; }
-          echo "NDK clang verified: $NDK_DIR"
-          # Install SDK platform and build-tools
+          ls -la "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" || { echo "NDK clang MISSING"; find "$NDK_DIR" -name clang 2>/dev/null | head -5; exit 1; }
+          echo "NDK OK: $NDK_DIR"
           yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install \
             'platforms;android-36' 'build-tools;36.0.0' \
             --sdk_root="$SDK"
