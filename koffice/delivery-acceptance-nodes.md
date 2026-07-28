@@ -225,7 +225,7 @@
 本轮结论
 - `lxml` 修复有效；新阻塞为 `python3-polib`，已在提交 7fb8997 补齐。
 
-## 9. 第 6 轮验收（2026-07-29 / run #24-#26）
+## 9. 第 6 轮验收（2026-07-29 / run #24-#27）
 
 改动
 - 新增 `python3-polib`。
@@ -236,7 +236,8 @@
 本轮验收结果
 - run #24: 进行中，包含 `python3-polib` 修复；因启动时尚无 concurrency 分组，继续保留。
 - run #25: 已被新 concurrency 策略自动取消。
-- run #26: 最终优化 workflow 已排队。
+- run #26: host dependency 快速门禁通过，随后由最终 workflow 更新触发取消。
+- run #27: 最终优化 workflow 已排队；后续文档更新不再触发构建。
 
 本轮验收目标
 - 快速门禁通过。
