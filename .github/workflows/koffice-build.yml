@@ -2,9 +2,7 @@ name: KOffice Android Build
 
 on:
   push:
-    paths:
-      - 'koffice/**'
-      - '.github/workflows/koffice-build.yml'
+    branches: [main]
   workflow_dispatch:
 
 jobs:
