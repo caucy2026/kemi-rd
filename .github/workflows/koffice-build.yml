@@ -27,6 +27,9 @@ jobs:
             nasm yasm \
             bison flex gperf \
             unzip zip \
+            uuid-dev \
+            libssl-dev \
+            libcurl4-openssl-dev \
             libgl1-mesa-dev libglu1-mesa-dev \
             ccache
           ccache -M 2G
