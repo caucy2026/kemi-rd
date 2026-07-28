@@ -161,15 +161,30 @@
 本轮验收结果
 - A1-A3: 通过（未变更）
 - B1-B3: 通过（未变更）
-- C1: 通过（run #11 已触发）
-- C2: 进行中（NDK 安装步骤运行中）
-- C3-C4: 待定
-- D1-D2: 待定
-- E1-E4: 待定
-- F1-F3: 待定
+- C1: 通过（run #11 已触发并完成）
+- C2: **通过**（NDK 安装步骤成功，clang 验证通过）
+- C3: **失败**（Build LibreOffice engine: configure 报错 `uuid is required for internal Python`）
+- C4: 未执行到（被 C3 阻断）
+- D1-D2: 阻塞
+- E1-E4: 阻塞
+- F1-F3: 阻塞
 
 本轮结论
-- 等待 CI run #11 完成，当前处于 C2（Install Android NDK）步骤。
+- 进展：C2（NDK）已修复，C3 新阻塞为缺少 `uuid-dev`。
+- 已识别修复：安装 `uuid-dev libssl-dev libcurl4-openssl-dev`。
+
+## 5. 第 3 轮验收（2026-07-28 / run #12）
+
+基线提交：3e5ab54
+改动：engine 依赖新增 `uuid-dev libssl-dev libcurl4-openssl-dev`
+
+本轮验收结果
+- C1: 通过（run #12 已排队）
+- C2: 进行中
+- 其余节点：待定
+
+本轮结论
+- 等待 CI run #12 完成，目标是通过 C3（engine 编译）。
 
 ## 5. 下一轮验收触发条件
 
