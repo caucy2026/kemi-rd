@@ -189,19 +189,19 @@
 本轮结论
 - 进展：C3 engine 编译通过。新阻塞：缺少 `python3-lxml`。
 
-## 6. 第 4 轮验收（2026-07-28 / run #14-#18）
+## 6. 第 4 轮验收（2026-07-28 / run #14-#21）
 
 基线提交：488361c → c4b05bd
 改动：依赖新增 `python3-lxml`，runner 切 `ubuntu-latest`
 
 本轮验收结果
 - C1: 失败（run #14-#18 全部 0 步，runner_id=0，2 秒内结束）
-- 根因诊断：**GitHub Actions 仓库级被禁用**（连最简单 hello-world workflow 也 0 步失败）
+- 根因诊断：GitHub API annotation 明确返回 `The job was not started because your account is locked due to a billing issue.`
 - 非 workflow 代码问题
 
 本轮结论
-- 阻塞：需要去 GitHub Settings → Actions 重新启用。
-- 当前 workflow（含 `python3-lxml` + `ubuntu-latest`）已就绪，启用后可直接跑。
+- 阻塞：GitHub 账户账单锁定；处理账单后 run #22 已恢复正常 runner。
+- 当前 workflow（含 `python3-lxml`）已就绪。
 
 ## 7. 下一轮待办
 
@@ -209,29 +209,47 @@
 2. ~~确认后 CI 自动触发~~ ✅ run #22 正在运行
 3. 等待 C3.5（app layer）→ C4（APK）→ D（产物下载）→ E（设备验收）
 
-## 8. 第 5 轮验收（2026-07-28 / run #22）
+## 8. 第 5 轮验收（2026-07-28 至 2026-07-29 / run #22-#23）
 
 基线提交：待确认
-状态：CI 已恢复，正在运行中
+状态：CI 已恢复，两轮均完成
 
 本轮验收结果
-- C1: ✅ 通过（run #22 正常启动，14 个 step）
-- C2: 待定（NDK 安装）
-- C3: 待定（engine 编译，预计 ~3h）
-- C3.5: 待定（app layer，含 python3-lxml 修复）
-- C4: 待定（APK 打包）
-- D/E/F: 待定
+- C1: 通过（run #22/#23 正常启动）
+- C2: 通过（NDK 安装）
+- C3: 通过（engine 编译）
+- C3.5: 失败（app configure 报错 `polib for python3 is needed`）
+- C4: 未执行到
+- D/E/F: 阻塞
 
 本轮结论
-- 等待 engine 编译完成。如果 C3.5 通过，这将是首个成功产出 APK 的 run。
+- `lxml` 修复有效；新阻塞为 `python3-polib`，已在提交 7fb8997 补齐。
 
-## 5. 下一轮验收触发条件
+## 9. 第 6 轮验收（2026-07-29 / run #24-#26）
+
+改动
+- 新增 `python3-polib`。
+- 增加 host dependency 快速门禁，缺 Python 模块时在全量 engine 编译前失败。
+- 增加固定 5GB `ccache` 跨 run 复用。
+- 增加 workflow concurrency；新提交自动取消旧的同组 run。
+
+本轮验收结果
+- run #24: 进行中，包含 `python3-polib` 修复；因启动时尚无 concurrency 分组，继续保留。
+- run #25: 已被新 concurrency 策略自动取消。
+- run #26: 最终优化 workflow 已排队。
+
+本轮验收目标
+- 快速门禁通过。
+- C3.5 app layer 通过。
+- C4 APK 打包并上传 artifact。
+
+## 10. 下一轮验收触发条件
 
 - 触发条件 1：CI 最新 run 首次 success。
 - 触发条件 2：产生 APK artifact 并可安装。
 - 触发条件 3：完成设备端 E1-E4 验收记录。
 
-## 6. 验收记录模板（后续每轮追加）
+## 11. 验收记录模板（后续每轮追加）
 
 - 轮次：YYYY-MM-DD / run #编号
 - A 源码基线：通过/失败（证据）
