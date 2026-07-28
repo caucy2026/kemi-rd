@@ -205,9 +205,25 @@
 
 ## 7. 下一轮待办
 
-1. 去 https://github.com/caucy2026/kemi-rd/settings/actions 启用 Actions
-2. 确认后 CI 自动触发，验证 `python3-lxml` 修复是否让 C3.5（app layer）通过
-3. C3.5 → C4（APK）→ D（产物下载）→ E（设备验收）
+1. ~~去 GitHub Settings → Actions 启用~~ ✅ 已恢复（账单问题解决）
+2. ~~确认后 CI 自动触发~~ ✅ run #22 正在运行
+3. 等待 C3.5（app layer）→ C4（APK）→ D（产物下载）→ E（设备验收）
+
+## 8. 第 5 轮验收（2026-07-28 / run #22）
+
+基线提交：待确认
+状态：CI 已恢复，正在运行中
+
+本轮验收结果
+- C1: ✅ 通过（run #22 正常启动，14 个 step）
+- C2: 待定（NDK 安装）
+- C3: 待定（engine 编译，预计 ~3h）
+- C3.5: 待定（app layer，含 python3-lxml 修复）
+- C4: 待定（APK 打包）
+- D/E/F: 待定
+
+本轮结论
+- 等待 engine 编译完成。如果 C3.5 通过，这将是首个成功产出 APK 的 run。
 
 ## 5. 下一轮验收触发条件
 
