@@ -2,7 +2,9 @@ name: KOffice Android Build
 
 on:
   push:
-    branches: [main]
+    paths:
+      - 'koffice/**'
+      - '.github/workflows/koffice-build.yml'
   workflow_dispatch:
 
 jobs:
@@ -29,6 +31,7 @@ jobs:
             libssl-dev \
             libcurl4-openssl-dev \
             python3-lxml \
+            python3-polib \
             libgl1-mesa-dev libglu1-mesa-dev \
             ccache
           ccache -M 2G
