@@ -39,6 +39,14 @@ jobs:
             libgl1-mesa-dev libglu1-mesa-dev \
             ccache
 
+      - name: Preflight host dependencies
+        run: |
+          set -euo pipefail
+          python3 -c 'import lxml, polib; print("Python app dependencies OK")'
+          command -v ccache
+          command -v autoconf
+          echo "Host dependency preflight OK"
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -149,13 +157,12 @@ jobs:
             echo "Applied: $(basename "$patch")"
           done
 
-      - name: Preflight app layer dependencies
+      - name: Preflight source tree
         run: |
           set -euo pipefail
-          python3 -c 'import lxml, polib; print("Python app dependencies OK")'
           test -x koffice/upstream/autogen.sh
           test -x koffice/upstream/engine/autogen.sh
-          echo "App layer preflight OK"
+          echo "Source tree preflight OK"
 
       - name: Build LibreOffice engine (arm64-v8a)
         working-directory: koffice/upstream/engine
