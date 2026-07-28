@@ -30,6 +30,7 @@ jobs:
             uuid-dev \
             libssl-dev \
             libcurl4-openssl-dev \
+            python3-lxml \
             libgl1-mesa-dev libglu1-mesa-dev \
             ccache
           ccache -M 2G

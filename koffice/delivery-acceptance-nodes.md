@@ -179,12 +179,24 @@
 改动：engine 依赖新增 `uuid-dev libssl-dev libcurl4-openssl-dev`
 
 本轮验收结果
-- C1: 通过（run #12 已排队）
-- C2: 进行中
-- 其余节点：待定
+- C1: 通过
+- C2: 通过（NDK 安装正常）
+- C3: **通过**（engine 编译成功，耗时约 170 分钟）
+- C3.5: **失败**（app layer configure 报错 `lxml for python3 is needed`）
+- C4: 未执行到（被 C3.5 阻断）
+- D/E/F: 阻塞
 
 本轮结论
-- 等待 CI run #12 完成，目标是通过 C3（engine 编译）。
+- 进展：C3 engine 编译通过。新阻塞：缺少 `python3-lxml`。
+
+## 6. 第 4 轮验收（2026-07-28 / run #14）
+
+基线提交：待推送
+改动：依赖新增 `python3-lxml`
+
+本轮验收结果
+- 待 CI 完成
+- 目标：C3（engine）→ C3.5（app layer）→ C4（APK）全部通过
 
 ## 5. 下一轮验收触发条件
 
