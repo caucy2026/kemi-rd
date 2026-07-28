@@ -45,21 +45,24 @@ jobs:
       - name: Install Android NDK
         run: |
           SDK=/usr/local/lib/android/sdk
-          NDK_VER=28.2.13676358
-          NDK_ZIP=android-ndk-r28-linux.zip
+          NDK_VER=27.2.12479018
+          NDK_ZIP=android-ndk-r27c-linux.zip
           NDK_URL=https://dl.google.com/android/repository/${NDK_ZIP}
           NDK_DIR=$SDK/ndk/$NDK_VER
           if [ ! -f "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ]; then
-            echo "Downloading NDK r28..."
+            echo "Downloading NDK r27c..."
             curl -sL -o /tmp/$NDK_ZIP "$NDK_URL"
             sudo mkdir -p "$NDK_DIR"
-            sudo unzip -q /tmp/$NDK_ZIP -d "$SDK/ndk/"
-            # Google zip extracts to android-ndk-r28/, rename to versioned dir
-            sudo mv "$SDK/ndk/android-ndk-r28" "$NDK_DIR" 2>/dev/null || true
+            sudo unzip -qo /tmp/$NDK_ZIP -d "$SDK/ndk/"
+            # Google zip extracts to android-ndk-r27c/, rename to versioned dir
+            extracted=$(ls -d "$SDK/ndk/android-ndk-r27c" 2>/dev/null || echo '')
+            if [ -n "$extracted" ] && [ "$extracted" != "$NDK_DIR" ]; then
+              sudo mv "$extracted" "$NDK_DIR"
+            fi
             rm -f /tmp/$NDK_ZIP
           fi
-          test -f "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" || { echo "NDK clang missing"; exit 1; }
-          echo "NDK clang OK: $NDK_DIR"
+          test -f "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" || { echo "NDK clang missing at $NDK_DIR"; ls "$NDK_DIR/" 2>/dev/null; exit 1; }
+          echo "NDK clang verified: $NDK_DIR"
           # Install SDK platform and build-tools
           yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install \
             'platforms;android-36' 'build-tools;36.0.0' \
