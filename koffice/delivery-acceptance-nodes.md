@@ -189,14 +189,25 @@
 本轮结论
 - 进展：C3 engine 编译通过。新阻塞：缺少 `python3-lxml`。
 
-## 6. 第 4 轮验收（2026-07-28 / run #14）
+## 6. 第 4 轮验收（2026-07-28 / run #14-#18）
 
-基线提交：待推送
-改动：依赖新增 `python3-lxml`
+基线提交：488361c → c4b05bd
+改动：依赖新增 `python3-lxml`，runner 切 `ubuntu-latest`
 
 本轮验收结果
-- 待 CI 完成
-- 目标：C3（engine）→ C3.5（app layer）→ C4（APK）全部通过
+- C1: 失败（run #14-#18 全部 0 步，runner_id=0，2 秒内结束）
+- 根因诊断：**GitHub Actions 仓库级被禁用**（连最简单 hello-world workflow 也 0 步失败）
+- 非 workflow 代码问题
+
+本轮结论
+- 阻塞：需要去 GitHub Settings → Actions 重新启用。
+- 当前 workflow（含 `python3-lxml` + `ubuntu-latest`）已就绪，启用后可直接跑。
+
+## 7. 下一轮待办
+
+1. 去 https://github.com/caucy2026/kemi-rd/settings/actions 启用 Actions
+2. 确认后 CI 自动触发，验证 `python3-lxml` 修复是否让 C3.5（app layer）通过
+3. C3.5 → C4（APK）→ D（产物下载）→ E（设备验收）
 
 ## 5. 下一轮验收触发条件
 
