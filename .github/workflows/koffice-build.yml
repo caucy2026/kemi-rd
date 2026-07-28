@@ -60,6 +60,18 @@ jobs:
             echo "Applied: $(basename "$patch")"
           done
 
+      - name: Verify NDK
+        run: |
+          NDK=$ANDROID_SDK_ROOT/ndk/28.2.13676358
+          echo "NDK contents:"
+          ls "$NDK/" 2>/dev/null || echo "NDK dir not found!"
+          echo "---"
+          ls "$NDK/toolchains/" 2>/dev/null || echo "no toolchains/"
+          echo "---"
+          find "$NDK/toolchains/llvm/prebuilt" -name clang -type f 2>/dev/null | head -10 || echo "clang not found"
+          echo "---"
+          find "$NDK" -name 'clang' -type f 2>/dev/null | head -10
+
       - name: Build LibreOffice engine (arm64-v8a)
         working-directory: koffice/upstream/engine
         run: |
