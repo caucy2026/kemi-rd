@@ -19,6 +19,17 @@ jobs:
           sudo rm -rf /usr/local/lib/android/sdk/ndk/*/toolchains
           df -h /
 
+      - name: Install engine build dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq \
+            autoconf automake libtool pkg-config \
+            nasm yasm \
+            bison flex gperf \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            ccache
+          ccache -M 2G
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
@@ -31,10 +42,15 @@ jobs:
           java-version: '17'
           distribution: temurin
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platforms;android-36 ndk;23.0.7599858 ndk;28.2.13676358 build-tools;36.0.0'
+      - name: Install Android NDK
+        run: |
+          SDK=/usr/local/lib/android/sdk
+          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install \
+            'ndk;23.0.7599858' 'ndk;28.2.13676358' \
+            'platforms;android-36' 'build-tools;36.0.0' \
+            --sdk_root="$SDK"
+          echo "ANDROID_SDK_ROOT=$SDK" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$SDK/ndk/28.2.13676358" >> $GITHUB_ENV
 
       - name: Apply KOffice patches
         working-directory: koffice/upstream
@@ -47,15 +63,18 @@ jobs:
       - name: Build LibreOffice engine (arm64-v8a)
         working-directory: koffice/upstream/engine
         run: |
-          cat > autogen.input << 'EOF'
+          NDK=$ANDROID_SDK_ROOT/ndk/23.0.7599858
+          echo "NDK path: $NDK"
+          test -d "$NDK" || { echo "NDK not found at $NDK"; exit 1; }
+          cat > autogen.input << EOF
           --build=x86_64-unknown-linux-gnu
-          --with-android-ndk=$ANDROID_HOME/ndk/23.0.7599858
-          --with-android-sdk=$ANDROID_HOME
+          --with-android-ndk=$NDK
+          --with-android-sdk=$ANDROID_SDK_ROOT
           --enable-sal-log
           --with-distro=CPAndroidAarch64
           --enable-dbgutil
           EOF
-          ./autogen.sh
+          ./autogen.sh 2>&1 | tee autogen.log
           make -j$(nproc) 2>&1 | tee build-engine.log
 
       - name: Build Collabora Office app layer
@@ -74,8 +93,6 @@ jobs:
 
       - name: Build Android APK
         working-directory: koffice/upstream/android
-        env:
-          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
         run: |
           ./gradlew assembleDebug 2>&1 | tee build-apk.log
 
@@ -98,7 +115,10 @@ jobs:
         with:
           name: build-logs
           path: |
+            koffice/upstream/engine/autogen.log
+            koffice/upstream/engine/config.log
             koffice/upstream/engine/build-engine.log
+            koffice/upstream/config.log
             koffice/upstream/build-app-layer.log
             koffice/upstream/android/build-apk.log
           retention-days: 7
