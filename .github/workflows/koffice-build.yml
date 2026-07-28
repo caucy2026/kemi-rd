@@ -1,0 +1,104 @@
+name: KOffice Android Build
+
+on:
+  push:
+    paths:
+      - 'koffice/**'
+      - '.github/workflows/koffice-build.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+
+    steps:
+      - name: Free disk space
+        run: |
+          sudo rm -rf /usr/share/dotnet /opt/ghc /usr/local/share/boost
+          sudo rm -rf /usr/local/lib/android/sdk/ndk/*/toolchains
+          df -h /
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0
+
+      - name: Setup JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: temurin
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platforms;android-36 ndk;23.0.7599858 ndk;28.2.13676358 build-tools;36.0.0'
+
+      - name: Apply KOffice patches
+        working-directory: koffice/upstream
+        run: |
+          for patch in ../patches/*.patch; do
+            git apply --check "$patch" && git apply "$patch"
+            echo "Applied: $(basename "$patch")"
+          done
+
+      - name: Build LibreOffice engine (arm64-v8a)
+        working-directory: koffice/upstream/engine
+        run: |
+          cat > autogen.input << 'EOF'
+          --build=x86_64-unknown-linux-gnu
+          --with-android-ndk=$ANDROID_HOME/ndk/23.0.7599858
+          --with-android-sdk=$ANDROID_HOME
+          --enable-sal-log
+          --with-distro=CPAndroidAarch64
+          --enable-dbgutil
+          EOF
+          ./autogen.sh
+          make -j$(nproc) 2>&1 | tee build-engine.log
+
+      - name: Build Collabora Office app layer
+        working-directory: koffice/upstream
+        run: |
+          ./autogen.sh
+          ./configure \
+            --enable-androidapp \
+            --with-lo-builddir="$(pwd)/engine" \
+            --enable-debug \
+            --with-android-abi=arm64-v8a \
+            --with-app-name=KOffice \
+            --with-app-package-name=org.kemi.koffice \
+            --with-vendor=KEMI
+          make -j$(nproc) 2>&1 | tee build-app-layer.log
+
+      - name: Build Android APK
+        working-directory: koffice/upstream/android
+        env:
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/28.2.13676358
+        run: |
+          ./gradlew assembleDebug 2>&1 | tee build-apk.log
+
+      - name: Collect APK artifacts
+        run: |
+          mkdir -p artifacts
+          find koffice/upstream/android -name '*.apk' -exec cp {} artifacts/ \;
+          ls -lh artifacts/
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: koffice-debug-apk
+          path: artifacts/*.apk
+          retention-days: 30
+
+      - name: Upload build logs (on failure)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            koffice/upstream/engine/build-engine.log
+            koffice/upstream/build-app-layer.log
+            koffice/upstream/android/build-apk.log
+          retention-days: 7
