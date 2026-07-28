@@ -45,26 +45,80 @@ jobs:
 
       - name: Install Android NDK
         run: |
+          set -euo pipefail
           SDK=/usr/local/lib/android/sdk
           NDK_VER=27.2.12479018
           NDK_ZIP=android-ndk-r27c-linux.zip
           NDK_URL=https://dl.google.com/android/repository/${NDK_ZIP}
           NDK_DIR=$SDK/ndk/$NDK_VER
-          if [ ! -f "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ]; then
-            echo "Downloading NDK r27c..."
-            curl -sL -o /tmp/$NDK_ZIP "$NDK_URL"
+          NDK_CLANG=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang
+
+          echo "=== Step 1: Check existing NDK ==="
+          if [ -x "$NDK_CLANG" ]; then
+            echo "NDK already installed and clang executable: $NDK_CLANG"
+            "$NDK_CLANG" --version | head -1
+          else
+            echo "NDK not found or clang missing at $NDK_CLANG"
+            echo "=== Step 2: Download NDK r27c ==="
+            curl --retry 3 --retry-delay 10 -sL -o /tmp/${NDK_ZIP} "${NDK_URL}"
+            ls -lh /tmp/${NDK_ZIP}
+            echo "Download OK ($(stat -c%s /tmp/${NDK_ZIP}) bytes)"
+
+            echo "=== Step 3: Extract NDK ==="
+            rm -rf /tmp/ndk-extract
+            mkdir -p /tmp/ndk-extract
+            unzip -qo /tmp/${NDK_ZIP} -d /tmp/ndk-extract/
+            echo "Extract OK"
+            # Find the actual top-level directory (name varies by NDK version)
+            NDK_SRC_DIR=$(ls -d /tmp/ndk-extract/android-ndk-* 2>/dev/null | head -1)
+            if [ -z "$NDK_SRC_DIR" ]; then
+              echo "ERROR: cannot find extracted NDK directory"
+              ls -la /tmp/ndk-extract/
+              exit 1
+            fi
+            echo "Extracted NDK source dir: $NDK_SRC_DIR"
+
+            echo "=== Step 4: Install NDK to $NDK_DIR ==="
+            sudo rm -rf "$NDK_DIR"
             sudo mkdir -p "$NDK_DIR"
-            sudo unzip -qo /tmp/$NDK_ZIP -d /tmp/ndk-extract/
-            sudo mv /tmp/ndk-extract/android-ndk-r27c/* "$NDK_DIR/"
-            rm -rf /tmp/$NDK_ZIP /tmp/ndk-extract
+            sudo cp -a "$NDK_SRC_DIR"/* "$NDK_DIR"/
+            sudo chmod -R a+rX "$NDK_DIR"
+            echo "Install OK"
+
+            # Cleanup
+            rm -rf /tmp/${NDK_ZIP} /tmp/ndk-extract
           fi
-          ls -la "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" || { echo "NDK clang MISSING"; find "$NDK_DIR" -name clang 2>/dev/null | head -5; exit 1; }
-          echo "NDK OK: $NDK_DIR"
-          yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install \
-            'platforms;android-36' 'build-tools;36.0.0' \
-            --sdk_root="$SDK"
+
+          echo "=== Step 5: Verify NDK clang ==="
+          if [ ! -x "$NDK_CLANG" ]; then
+            echo "ERROR: clang not found or not executable at $NDK_CLANG"
+            echo "Directory listing of NDK:"
+            ls -la "$NDK_DIR/" 2>/dev/null || echo "(NDK_DIR does not exist)"
+            find "$SDK/ndk" -name clang 2>/dev/null | head -20 || echo "(no clang found)"
+            exit 1
+          fi
+          "$NDK_CLANG" --version | head -1
+          echo "NDK clang OK: $NDK_CLANG"
+
+          echo "=== Step 6: Install Android SDK components ==="
+          # Find sdkmanager (path varies across runner images)
+          SDKMANAGER=""
+          for p in "$SDK/cmdline-tools/latest/bin/sdkmanager" "$SDK/cmdline-tools/13.0/bin/sdkmanager" "$SDK/tools/bin/sdkmanager"; do
+            if [ -x "$p" ]; then SDKMANAGER="$p"; break; fi
+          done
+          if [ -z "$SDKMANAGER" ]; then
+            echo "ERROR: sdkmanager not found; searched common paths"
+            find "$SDK" -name sdkmanager 2>/dev/null | head -5
+            exit 1
+          fi
+          echo "Using sdkmanager: $SDKMANAGER"
+          yes | "$SDKMANAGER" --install 'platforms;android-36' 'build-tools;36.0.0' --sdk_root="$SDK" || true
+          echo "SDK setup done"
+
+          echo "=== Step 7: Export environment ==="
           echo "ANDROID_SDK_ROOT=$SDK" >> $GITHUB_ENV
           echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
+          echo "NDK setup complete"
 
       - name: Apply KOffice patches
         working-directory: koffice/upstream
