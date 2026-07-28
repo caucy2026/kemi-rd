@@ -437,7 +437,7 @@ Activity 的 theme 和 window 配置应保证：
 
 本节按 2026-07-27 的代码与真机日志更新。
 
-### 14.1 已落地
+### 14.1 已落地（2026-07-28 更新）
 
 - 原生状态机已落地：`hidden/opening/visible/closing`，并用 `requestId` 防止旧回调串扰。
 - 代理 Activity 已落地：目标屏启动、原生 `EditText` 输入连接、`WindowInsets.Type.ime()` 监听可见性。
@@ -446,12 +446,20 @@ Activity 的 theme 和 window 配置应保证：
 - 关闭竞态已修复：在 `onPointerDown` 捕获关闭意图，避免同一次点击被状态抖动反转。
 - 会话归属已落地：文本/按键转发前校验 `sessionId` 与 `requestId`。
 - 页面稳定性已落地：Android 端 `resizeToAvoidBottomInset=false`，并跳过当前屏 `KeyboardVisibilityController` 对布局的影响。
+- 输入转发链路完整落地：`commitText` / `finishComposingText` / `TextWatcher` 三条文本提交路径，含 250ms 去重。
+- 删除键转发完整落地：`deleteSurroundingText` / `sendKeyEvent` / `setOnKeyListener` 三条路径，含 composition 状态感知。
+- IME 焦点增强：主动 `requestFocus` + `restartInput` + `showSoftInput` 高频重试（350ms × 16 次），不依赖 `windowFocus` 前置条件。
+- 去 `FLAG_NOT_TOUCHABLE`：确保代理窗口可正常接收 IME 输入连接。
+- `FFI.invokeMethod` 返回类型修复：`Future<bool>` → `Future<dynamic>`（修 Map 返回导致的 type mismatch 红屏）。
+- `mChannel.invokeMethod` 全路径异常容错：`MissingPluginException` / `PlatformException` / 通用异常降级。
+- 副屏 `RemoteActivity.mChannel` 文件传输平台方法补齐。
+- `enable_soft_keyboard` 改为 no-op：避免跨屏代理模式下干扰键盘代理焦点路由。
+- `requestPermission` 支持指定 `MethodChannel`：保障副屏权限回调回到副屏引擎。
 
 ### 14.2 与设计仍有偏差
 
 - 文档建议 `opening` 超时为 2 秒；当前实现为 8 秒（容错优先）。
-- `KeyboardProxyActivity` 当前仍设置 `FLAG_NOT_TOUCHABLE`，在部分 ROM 上需持续观察是否影响 IME 首次接管。
-- `showSoftInput()` 仍可能首次返回 `false`，当前靠后续时序与重试兜底，不属于确定性首发成功路径。
+- `showSoftInput()` 仍可能前 1-2 次返回 `false`，当前靠 350ms 重试兜底，不属于确定性首发成功路径。
 
 ## 15. 2026-07-27 调试实录（问题 -> 证据 -> 处理）
 
@@ -611,3 +619,301 @@ Activity 的 theme 和 window 配置应保证：
 - 源 Activity 实际 displayId 识别是否正确。
 - 目标 `Display 0` 启动参数是否被 ROM 策略覆盖。
 - 代理 Activity 是否在主屏真正获得焦点与 Insets 回调。
+## 18. 输入转发链路详解（2026-07-28 调试终版）
+
+本节是跨屏代理输入转发的权威参考，记录每条路径的触发条件、处理逻辑和已知坑。
+
+### 18.1 架构总览
+
+代理 EditText（1×1 透明像素）的唯一职责是托管 IME 的 `InputConnection`。所有输入通过覆写 `InputConnectionWrapper` 的方法拦截并转发到远程。本地 EditText 在每次 `commitText` 后立即清空，不保留任何用户文本。
+
+```
+用户输入
+  │
+  ├─ 文本提交 ──────────────────────────────────────
+  │   ├─ commitText()           ← IME 提交最终文本（主路径）
+  │   ├─ finishComposingText()  ← 选词结束，组合文本刷新（兜底）
+  │   └─ TextWatcher.onTextChanged() ← 安全网（捕获绕过 commitText 的 IME）
+  │       │
+  │       └─ forwardCommittedText(text, source)
+  │           ├─ 250ms 同文本去重
+  │           └─ KeyboardProxyManager.commitText()
+  │               └─ channel.invokeMethod("keyboard_proxy_commit_text")
+  │
+  ├─ 删除键 ────────────────────────────────────────
+  │   ├─ deleteSurroundingText() ← 软键盘 IME 主路径
+  │   ├─ sendKeyEvent(DEL)       ← 部分 IME 用 KeyEvent 发删除
+  │   └─ setOnKeyListener(DEL)   ← 硬件键盘兜底
+  │       │
+  │       └─ composingStart >= 0 ?
+  │           ├─ YES → super（IME 本地删拼音/组合文本）
+  │           └─ NO  → KeyboardProxyManager.sendKey("VK_BACK")
+  │
+  └─ 特殊键 ────────────────────────────────────────
+      ├─ setOnEditorActionListener  → VK_RETURN
+      ├─ setOnKeyListener(TAB)      → VK_TAB
+      └─ setOnKeyListener(DEL)      → VK_BACK（硬件键盘）
+```
+
+### 18.2 文本提交三条路径与去重
+
+#### 18.2.1 commitText（主路径）
+
+```kotlin
+override fun commitText(text: CharSequence?, newCursorPosition: Int): Boolean {
+    forwardCommittedText(text, "commitText")  // 先转发，再调 super
+    val handled = super.commitText(text, newCursorPosition)
+    host.post { /* 清空 EditText */ }
+    return handled
+}
+```
+
+- 大部分 IME 在用户选词后走此路径。
+- **先转发再 super**：确保文本先到达远程，避免 super 内部修改状态影响转发。
+- **post 清空 EditText**：在下一帧清空，避免干扰 IME 的后续回调。
+
+#### 18.2.2 finishComposingText（兜底路径）
+
+```kotlin
+override fun finishComposingText(): Boolean {
+    val handled = super.finishComposingText()
+    val composed = host.text?.toString().orEmpty()
+    if (composed.isNotEmpty()) {
+        forwardCommittedText(composed, "finishComposingText")
+        host.post { /* 清空 EditText */ }
+    }
+    return handled
+}
+```
+
+- **为什么需要**：部分中文输入法（尤其是第三方 IME）在选词时不调 `commitText`，而是先调 `finishComposingText` 结束组合态，把最终文本留在 EditText 里。如果不覆写此方法，文本会丢失。
+- **时序**：先 `super.finishComposingText()` 让组合态结束 → 读取 EditText 中剩余文本 → 转发 → 清空。
+- 这是 2026-07-28 调试中发现"nihao 选词不回传"的根因修复。
+
+#### 18.2.3 TextWatcher（安全网）
+
+```kotlin
+override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+    if (ignoreTextChange) return
+    val committed = s?.toString().orEmpty()
+    val composingStart = BaseInputConnection.getComposingSpanStart(editableText)
+    if (committed.isEmpty() || composingStart >= 0) return
+    forwardCommittedText(committed, "textWatcher")
+    ignoreTextChange = true
+    text.clear()
+    ignoreTextChange = false
+}
+```
+
+- **安全网定位**：捕获极少数完全不走 `commitText` / `finishComposingText` 的 IME。
+- **composingSpan 检查**：有活跃组合态时不转发——组合文本变动是 IME 内部行为（如拼音逐字母变化），不应发送到远程。
+- **ignoreTextChange 标志**：`commitText` 和 `finishComposingText` 在清空 EditText 前设置此标志，防止 TextWatcher 把清空操作误当新文本转发。
+
+#### 18.2.4 去重机制
+
+```kotlin
+private fun forwardCommittedText(text: CharSequence?, source: String) {
+    // ...
+    val now = SystemClock.elapsedRealtime()
+    if (committed == lastForwardedText &&
+        now - lastForwardedAtMs <= DUPLICATE_COMMIT_WINDOW_MS  // 250ms
+    ) {
+        Log.i(TAG, "skip_duplicate_commit_text src=$source lastSrc=$lastForwardedSource ...")
+        return  // ← 丢弃重复
+    }
+    lastForwardedText = committed
+    lastForwardedSource = source
+    lastForwardedAtMs = now
+    KeyboardProxyManager.commitText(requestId, sessionId, committed)
+}
+```
+
+- **为什么 250ms**：同一选词操作触发 `commitText` + `finishComposingText` 的间隔通常在 10-50ms 内。250ms 窗口足够覆盖此场景，同时不会误杀正常连续输入。
+- **来源标记**：日志中可区分是 `commitText` / `finishComposingText` / `textWatcher` 哪条路径触发，便于排障。
+- **每次 activate 重置**：新键盘会话开始时清空去重状态，避免跨会话干扰。
+- 这是 2026-07-28 调试中发现"选词后副屏收到两次输入"的修复。
+
+### 18.3 删除键三条路径与 composition 感知
+
+#### 18.3.1 核心问题
+
+`setOnKeyListener(KEYCODE_DEL)` **只对硬件键盘生效**。软键盘 IME 通过 `InputConnection` 方法与 App 通信：
+
+| IME 操作 | 实际调用 |
+|---------|---------|
+| 点击删除键 | `deleteSurroundingText(beforeLength, afterLength)` |
+| 部分 IME 删除 | `sendKeyEvent(KeyEvent.KEYCODE_DEL)` |
+| 硬件键盘删除 | `onKeyDown` → `setOnKeyListener` |
+
+只覆写 `setOnKeyListener` 会导致软键盘删除键完全无响应——这是 2026-07-28 调试中"删除键不工作"的根因。
+
+#### 18.3.2 deleteSurroundingText（主路径）
+
+```kotlin
+override fun deleteSurroundingText(beforeLength: Int, afterLength: Int): Boolean {
+    val composingStart = BaseInputConnection.getComposingSpanStart(host.text)
+
+    // 拼音组合中 → IME 本地处理，不转发远程
+    if (composingStart >= 0) {
+        return super.deleteSurroundingText(beforeLength, afterLength)
+    }
+
+    // 组合已结束 → 转发到远程
+    for (i in 0 until beforeLength) {
+        KeyboardProxyManager.sendKey(requestId, sessionId, "VK_BACK")
+    }
+    for (i in 0 until afterLength) {
+        KeyboardProxyManager.sendKey(requestId, sessionId, "VK_DELETE")
+    }
+
+    val superHandled = super.deleteSurroundingText(beforeLength, afterLength)
+    host.post { /* 清空 EditText */ }
+    return superHandled || true
+}
+```
+
+**composition 感知的设计逻辑**：
+
+| 场景 | composingStart | 行为 |
+|------|:---:|------|
+| 输入拼音 `nihao` 中按删除 | ≥ 0 | → super（IME 删拼音字母，不转发） |
+| 选词 `你好` 后按删除 | < 0 | → 转发 VK_BACK（远程删内容） |
+| 输入英文 `hello` 后按删除 | < 0 | → 转发 VK_BACK（同上） |
+
+- **beforeLength=1, afterLength=0**：标准 Backspace，删光标前一个字符。
+- **beforeLength > 1**：IME 可能一次删多个字符（如删除选区），每个字符发一个 VK_BACK。
+- **afterLength > 0**：Forward-delete（Delete 键），移动端极少触发，但仍做兼容。
+
+#### 18.3.3 sendKeyEvent（备用路径）
+
+```kotlin
+override fun sendKeyEvent(event: KeyEvent?): Boolean {
+    if (event != null && event.action == KeyEvent.ACTION_DOWN &&
+        event.keyCode == KeyEvent.KEYCODE_DEL
+    ) {
+        val composingStart = BaseInputConnection.getComposingSpanStart(host.text)
+        if (composingStart < 0) {
+            KeyboardProxyManager.sendKey(requestId, sessionId, "VK_BACK")
+            return true
+        }
+    }
+    return super.sendKeyEvent(event)
+}
+```
+
+- 部分 IME（如三星键盘、部分第三方输入法）用 `sendKeyEvent` 而非 `deleteSurroundingText` 发删除。
+- 同样的 composition 判断逻辑：组合中不转发。
+
+#### 18.3.4 setOnKeyListener（硬件键盘兜底）
+
+保留 `setOnKeyListener` 处理硬件键盘删除键，逻辑不变。
+
+### 18.4 输入转发校验链
+
+每条输入事件经过三层校验才到达远程：
+
+```
+KeyboardProxyActivity                KeyboardProxyManager               Flutter
+    │                                      │                              │
+    ├─ active? closeRequested?             │                              │
+    ├─ releaseRequested?                   │                              │
+    │                                      │                              │
+    └─ forwardCommittedText / sendKey ──→  ├─ requestId 匹配?             │
+                                           ├─ sessionId 匹配?             │
+                                           ├─ state == "visible"?         │
+                                           │                              │
+                                           └─ channel.invokeMethod() ──→ ├─ 当前会话校验
+                                                                          └─ Rust FFI 发送
+```
+
+- **Activity 层**：`active` 为 false（已请求关闭）或 `releaseRequested` 时立即丢弃。
+- **Manager 层**：`requestId` 不匹配 → 旧代理回调，丢弃；`sessionId` 不匹配 → 会话已切换，丢弃；`state != "visible"` → 键盘未真正打开，丢弃。
+- **Flutter 层**：收到后再校验当前远程会话是否仍匹配。
+
+### 18.5 IME 焦点增强策略
+
+代理 Activity 在目标屏上是一个透明窗口，系统可能不自动给它 IME 焦点。因此采用主动抢焦策略：
+
+```kotlin
+private val requestIme = object : Runnable {
+    override fun run() {
+        if (!active || closeRequested || ...) return
+        editText.requestFocus()           // 1. 先抢焦点
+        inputMethodManager.restartInput(editText)  // 2. 重启输入连接
+        val accepted = inputMethodManager.showSoftInput(editText, SHOW_IMPLICIT)  // 3. 请求显示键盘
+        if (!accepted && imeRequestAttempts < MAX_IME_REQUEST_ATTEMPTS) {
+            editText.postDelayed(this, IME_RETRY_DELAY_MS)  // 4. 350ms 后重试
+        }
+    }
+}
+```
+
+- **不依赖 windowFocus**：即使窗口尚未获得焦点，也会尝试请求。
+- **restartInput**：每次重试前重启输入连接，确保 IME 与最新 EditorInfo 同步。
+- **最多 16 次重试**（350ms × 16 ≈ 5.6 秒），超出后静默放弃。
+- 典型日志：第 1-2 次 `accepted=false`，第 3 次 `accepted=true`，总耗时约 1 秒。
+
+### 18.6 关键类型修复：FFI.invokeMethod 返回类型
+
+**问题**：`model.dart` 中 `FFI.invokeMethod` 声明返回 `Future<bool>`，但 `keyboard_proxy_open` 等方法返回 `Map`。Flutter 在类型检查时抛 `_Map<Object?, Object?> is not a subtype of FutureOr<bool>`，导致红屏。
+
+**修复**：改为 `Future<dynamic>`。
+
+```dart
+// 修复前
+Future<bool> invokeMethod(String method, [dynamic arguments]) async { ... }
+
+// 修复后
+Future<dynamic> invokeMethod(String method, [dynamic arguments]) async { ... }
+```
+
+影响范围：`mChannel` 和 `remoteChannel` 上所有返回非 bool 的方法调用。
+
+### 18.7 异常容错一览
+
+| 位置 | 异常类型 | 处理 |
+|------|---------|------|
+| `native_model.dart` invokeMethod | `MissingPluginException` | catch + log，不抛出 |
+| `native_model.dart` invokeMethod | `PlatformException` | catch + log，不抛出 |
+| `native_model.dart` invokeMethod | 通用 `Exception` | catch + log，不抛出 |
+| `common.dart` connect() | Wakelock enable 异常 | try-catch，不阻断连接 |
+| `common.dart` connect() | AndroidPermissionManager 异常 | try-catch，不阻断连接 |
+| `common.dart` 文件传输权限 | 权限请求失败 | catch + 降级提示 |
+
+### 18.8 2026-07-28 调试时间线
+
+本节按实际排障顺序记录关键发现与修复。
+
+#### 阶段 1：PAD 端缺少"传输文件"入口
+- **现象**：PAD 端远程页面找不到文件传输入口。
+- **处理**：在 `remote_page.dart` 三点菜单新增 Transfer file 入口，并移到底部操作栏。
+
+#### 阶段 2：点击"传输文件"红屏
+- **现象**：`PlatformException(No such method)` + Wakelock channel error。
+- **根因**：副屏 `RemoteActivity.mChannel` 缺少文件传输相关方法实现。
+- **处理**：补齐 `RemoteActivity.kt` 的 `mChannel` 方法；`common.dart` 加异常容错。
+
+#### 阶段 3：Map 返回类型崩溃
+- **现象**：`_Map<Object?, Object?> is not a subtype of FutureOr<bool>`。
+- **根因**：`FFI.invokeMethod` 声明返回 `Future<bool>`。
+- **处理**：改为 `Future<dynamic>`（见 18.6）。
+
+#### 阶段 4：中文选词不回传副屏
+- **现象**：输入 `nihao` 选词后副屏无任何文本，日志只有状态变更无 commit 日志。
+- **根因**：部分 IME 选词时不调 `commitText`，而是调 `finishComposingText` 结束组合态。
+- **处理**：覆写 `finishComposingText`，读取组合结束后的 EditText 内容并转发（见 18.2.2）。
+
+#### 阶段 5：选词后副屏收到两次输入
+- **现象**：同一次选词，副屏出现重复文本。
+- **根因**：`commitText` 和 `finishComposingText` 先后触发，各自转发一次。
+- **处理**：增加 250ms 同文本去重（见 18.2.4）。
+
+#### 阶段 6：删除键不工作
+- **现象**：软键盘点删除，副屏无反应。
+- **根因**：只覆写了 `setOnKeyListener`（仅硬件键盘生效），未覆写 `deleteSurroundingText`（软键盘 IME 主路径）。
+- **处理**：覆写 `deleteSurroundingText` + `sendKeyEvent`，含 composition 感知（见 18.3）。
+
+#### 阶段 7：Git 备份推送失败
+- **现象**：`git push backup master` 报 `did not receive expected object`。
+- **根因**：backup 远程仓库存在对象损坏（浅克隆历史不完整）。
+- **处理**：`git fetch --unshallow origin` 补全历史，再 force push 修复 backup/master。
