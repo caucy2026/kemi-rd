@@ -45,12 +45,27 @@ jobs:
       - name: Install Android NDK
         run: |
           SDK=/usr/local/lib/android/sdk
+          NDK_VER=28.2.13676358
+          NDK_ZIP=android-ndk-r28-linux.zip
+          NDK_URL=https://dl.google.com/android/repository/${NDK_ZIP}
+          NDK_DIR=$SDK/ndk/$NDK_VER
+          if [ ! -f "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ]; then
+            echo "Downloading NDK r28..."
+            curl -sL -o /tmp/$NDK_ZIP "$NDK_URL"
+            sudo mkdir -p "$NDK_DIR"
+            sudo unzip -q /tmp/$NDK_ZIP -d "$SDK/ndk/"
+            # Google zip extracts to android-ndk-r28/, rename to versioned dir
+            sudo mv "$SDK/ndk/android-ndk-r28" "$NDK_DIR" 2>/dev/null || true
+            rm -f /tmp/$NDK_ZIP
+          fi
+          test -f "$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" || { echo "NDK clang missing"; exit 1; }
+          echo "NDK clang OK: $NDK_DIR"
+          # Install SDK platform and build-tools
           yes | $SDK/cmdline-tools/latest/bin/sdkmanager --install \
-            'ndk;28.2.13676358' \
             'platforms;android-36' 'build-tools;36.0.0' \
             --sdk_root="$SDK"
           echo "ANDROID_SDK_ROOT=$SDK" >> $GITHUB_ENV
-          echo "ANDROID_NDK_HOME=$SDK/ndk/28.2.13676358" >> $GITHUB_ENV
+          echo "ANDROID_NDK_HOME=$NDK_DIR" >> $GITHUB_ENV
 
       - name: Apply KOffice patches
         working-directory: koffice/upstream
@@ -60,23 +75,11 @@ jobs:
             echo "Applied: $(basename "$patch")"
           done
 
-      - name: Verify NDK
-        run: |
-          NDK=$ANDROID_SDK_ROOT/ndk/28.2.13676358
-          echo "NDK contents:"
-          ls "$NDK/" 2>/dev/null || echo "NDK dir not found!"
-          echo "---"
-          ls "$NDK/toolchains/" 2>/dev/null || echo "no toolchains/"
-          echo "---"
-          find "$NDK/toolchains/llvm/prebuilt" -name clang -type f 2>/dev/null | head -10 || echo "clang not found"
-          echo "---"
-          find "$NDK" -name 'clang' -type f 2>/dev/null | head -10
-
       - name: Build LibreOffice engine (arm64-v8a)
         working-directory: koffice/upstream/engine
         run: |
           set -o pipefail
-          NDK=$ANDROID_SDK_ROOT/ndk/28.2.13676358
+          NDK=$ANDROID_NDK_HOME
           echo "NDK path: $NDK"
           test -d "$NDK" || { echo "NDK not found at $NDK"; exit 1; }
           cat > autogen.input << EOF
