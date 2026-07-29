@@ -17,6 +17,9 @@ jobs:
   build:
     runs-on: ubuntu-24.04
     timeout-minutes: 360
+    permissions:
+      contents: write
+      actions: read
 
     steps:
       - name: Free disk space
@@ -224,6 +227,18 @@ jobs:
           name: koffice-debug-apk
           path: artifacts/*.apk
           retention-days: 30
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KOffice Nightly Build
+          tag_name: koffice-nightly
+          files: artifacts/*.apk
+          prerelease: true
+          body: |
+            Automated nightly build of KOffice Android.
+            Commit: ${{ github.sha }}
+            Run: ${{ github.run_id }}
 
       - name: Upload build logs (on failure)
         if: failure()
