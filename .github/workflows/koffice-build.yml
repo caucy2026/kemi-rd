@@ -209,15 +209,32 @@ jobs:
             --with-vendor=KEMI
           make -j$(nproc) 2>&1 | tee build-app-layer.log
 
-      - name: Collect native libraries
+      - name: Build Android APK
+        working-directory: koffice/upstream/android
         run: |
-          mkdir -p artifacts/jniLibs/arm64-v8a
-          # Copy all .so files from the android project's jniLibs
-          find koffice/upstream/android/lib/src/main/cpp/lib -name '*.so' -exec cp {} artifacts/jniLibs/arm64-v8a/ \;
+          set -o pipefail
+          ./gradlew assembleDebug 2>&1 | tee build-apk.log
+
+      - name: Extract native libraries from APK
+        run: |
+          mkdir -p artifacts/jniLibs/arm64-v8a artifacts/apk
+          # Find the built APK
+          APK=$(find koffice/upstream/android -name '*.apk' | head -1)
+          echo "APK: $APK"
+          ls -lh "$APK"
+          # APK is a zip - extract .so files
+          unzip -o "$APK" 'lib/arm64-v8a/*.so' -d artifacts/jniLibs/arm64-v8a/ 2>&1 || true
+          # Flatten: move lib/arm64-v8a/*.so to arm64-v8a/
+          if [ -d artifacts/jniLibs/arm64-v8a/lib/arm64-v8a ]; then
+            mv artifacts/jniLibs/arm64-v8a/lib/arm64-v8a/*.so artifacts/jniLibs/arm64-v8a/
+            rm -rf artifacts/jniLibs/arm64-v8a/lib
+          fi
           echo "=== Native libraries ==="
           ls -lh artifacts/jniLibs/arm64-v8a/
           echo "=== Total size ==="
           du -sh artifacts/jniLibs/
+          # Also copy the APK
+          cp "$APK" artifacts/apk/
 
       - name: Upload native libraries
         uses: actions/upload-artifact@v4
@@ -231,13 +248,15 @@ jobs:
         with:
           name: KOffice Native Libraries
           tag_name: koffice-nightly
-          files: artifacts/jniLibs/**/*
+          files: |
+            artifacts/jniLibs/**/*
+            artifacts/apk/*.apk
           prerelease: true
           body: |
-            Native .so libraries for KOffice Android (arm64-v8a).
-            Download and extract to `koffice/upstream/android/lib/src/main/cpp/lib/`, then run `./gradlew assembleDebug` locally.
+            Native .so + APK for KOffice Android (arm64-v8a).
+            **Local build:** download native-libs, extract to `koffice/upstream/android/lib/src/main/cpp/lib/`, then `./gradlew assembleDebug`.
+            **Or just install the APK directly.**
             Commit: ${{ github.sha }}
-            Run: ${{ github.run_id }}
 
       - name: Upload build logs (on failure)
         if: failure()
