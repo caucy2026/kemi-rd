@@ -1,0 +1,48 @@
+name: Promote KOffice APK
+
+on:
+  push:
+    paths:
+      - '.github/workflows/koffice-promote.yml'
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: Successful KOffice build run ID
+        required: true
+        default: '30417356038'
+
+jobs:
+  promote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: write
+
+    steps:
+      - name: Download APK from successful run
+        uses: actions/download-artifact@v4
+        with:
+          name: koffice-debug-apk
+          path: artifacts
+          run-id: ${{ inputs.run_id || '30417356038' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verify APK
+        run: |
+          set -euo pipefail
+          APK=$(find artifacts -name '*.apk' -type f | head -1)
+          test -n "$APK"
+          unzip -t "$APK" >/dev/null
+          ls -lh "$APK"
+
+      - name: Publish APK release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: KOffice Nightly Build
+          tag_name: koffice-nightly
+          files: artifacts/*.apk
+          prerelease: true
+          body: |
+            Promoted from successful KOffice build run ${{ inputs.run_id || '30417356038' }}.
+            No rebuild was performed by this workflow.
