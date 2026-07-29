@@ -56,12 +56,12 @@ jobs:
           fetch-depth: 0
 
       - name: Restore engine compiler cache
-        uses: actions/cache@v4
+        uses: actions/cache/restore@v4
         with:
           path: ~/.cache/ccache
-          key: ${{ runner.os }}-koffice-arm64-ccache-v1
+          key: ${{ runner.os }}-koffice-arm64-ndk28-ccache-v1
           restore-keys: |
-            ${{ runner.os }}-koffice-arm64-ccache-v1-
+            ${{ runner.os }}-koffice-arm64-ndk28-ccache-
 
       - name: Configure engine compiler cache
         run: |
@@ -78,8 +78,8 @@ jobs:
         run: |
           set -euo pipefail
           SDK=/usr/local/lib/android/sdk
-          NDK_VER=27.2.12479018
-          NDK_ZIP=android-ndk-r27c-linux.zip
+          NDK_VER=28.2.13676358
+          NDK_ZIP=android-ndk-r28c-linux.zip
           NDK_URL=https://dl.google.com/android/repository/${NDK_ZIP}
           NDK_DIR=$SDK/ndk/$NDK_VER
           NDK_CLANG=$NDK_DIR/toolchains/llvm/prebuilt/linux-x86_64/bin/clang
@@ -90,7 +90,7 @@ jobs:
             "$NDK_CLANG" --version | head -1
           else
             echo "NDK not found or clang missing at $NDK_CLANG"
-            echo "=== Step 2: Download NDK r27c ==="
+            echo "=== Step 2: Download NDK r28c ==="
             curl --retry 3 --retry-delay 10 -sL -o /tmp/${NDK_ZIP} "${NDK_URL}"
             ls -lh /tmp/${NDK_ZIP}
             echo "Download OK ($(stat -c%s /tmp/${NDK_ZIP}) bytes)"
@@ -184,6 +184,12 @@ jobs:
           ./autogen.sh 2>&1 | tee autogen.log
           make -j$(nproc) 2>&1 | tee build-engine.log
           ccache -s
+
+      - name: Save engine compiler cache
+        uses: actions/cache/save@v4
+        with:
+          path: ~/.cache/ccache
+          key: ${{ runner.os }}-koffice-arm64-ndk28-ccache-v1
 
       - name: Build Collabora Office app layer
         working-directory: koffice/upstream

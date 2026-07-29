@@ -234,14 +234,20 @@
 - 增加 workflow concurrency；新提交自动取消旧的同组 run。
 
 本轮验收结果
-- run #24: 进行中，包含 `python3-polib` 修复；因启动时尚无 concurrency 分组，继续保留。
+- run #24: C3 engine 与 C3.5 app layer 通过，C4 `Build Android APK` 失败。
 - run #25: 已被新 concurrency 策略自动取消。
 - run #26: host dependency 快速门禁通过，随后由最终 workflow 更新触发取消。
-- run #27: 最终优化 workflow 已排队；后续文档更新不再触发构建。
+- run #27: C3 engine 与 C3.5 app layer 通过，C4 `Build Android APK` 失败；失败日志 artifact 已上传。
+
+失败根因与修复
+- Gradle 的 `app`、`lib` 模块和本地构建脚本均要求 NDK `28.2.13676358`，CI 却只安装 NDK `27.2.12479018`。
+- CMake 因 `/usr/local/lib/android/sdk/ndk/28.2.13676358/.../clang` 不存在而终止，不是 engine 或 app layer 编译失败。
+- CI 已统一安装官方 NDK r28c，并验证版本与三个构建入口一致、官方归档地址可访问。
+- `ccache` 改为 NDK r28 独立缓存，并在 engine 成功后立即保存，避免后续 APK 失败导致 engine 缓存丢失。
 
 本轮验收目标
-- 快速门禁通过。
-- C3.5 app layer 通过。
+- 快速门禁通过：已完成。
+- C3.5 app layer 通过：已完成。
 - C4 APK 打包并上传 artifact。
 
 ## 10. 下一轮验收触发条件
