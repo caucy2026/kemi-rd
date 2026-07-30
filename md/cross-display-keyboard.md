@@ -6,7 +6,7 @@
 
 本文是跨屏软键盘功能的唯一规格。现有实现若与本文冲突，以本文为准。
 
-相关背景见 [dual-screen-port.md](dual-screen-port.md)。
+相关双屏架构背景见 [chip.md](./chip.md)。
 
 ## 2. 已确认需求
 

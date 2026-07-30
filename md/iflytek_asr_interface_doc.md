@@ -4,7 +4,7 @@
 
 - **范围**：从系统级缓存读取讯飞参数 → HTTP 鉴权 → WebSocket 流式听写 → 两种业务用法（按住说话 / 自动聆听）
 - **不含**：TTS（合成）、未使用的场景（粤语/英文 scene、Opus 编码等）
-- **MAC / auth_id 细节**：见同目录 [`讯飞WiFi-MAC获取说明.md`](./讯飞WiFi-MAC获取说明.md)
+- **MAC / auth_id 边界**：由系统服务生成并写入全局参数；本文只消费结果，不定义派生规则
 
 ---
 
@@ -73,7 +73,7 @@
 - `wifi_mac` → 当前设备 WiFi MAC
 - `sn` / `system_version` → 其余鉴权或上报信息
 
-> 其他应用直接从 Settings.Global 读取参数并使用即可；如需配合设备身份，可参考 [`讯飞WiFi-MAC获取说明.md`](./讯飞WiFi-MAC获取说明.md) 里的 MAC 规则。 
+> 其他应用直接从 Settings.Global 读取参数并使用即可。MAC 与 `auth_id` 的生成规则由系统服务维护，业务应用不得自行猜测或重算。
 
 ---
 

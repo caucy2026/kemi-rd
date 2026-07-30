@@ -58,7 +58,7 @@
 #### 3. 用户使用细节与工作流
 1. 用户在副屏阅读 100MB+ 的 PDF 研报或学术论文，支持流畅缩放与高亮批注。
 2. 选中副屏 PDF 中的段落或公式，点击“摘录到主屏”，通过跨屏消息直接在主屏 Markor 编辑器中生成带页码锚点的引用块（如 `> [摘自 P14 节 3.2] 卷积核计算公式...`）。
-3. 主屏撰写时按住语音键，调用 [md/iflytek_asr_interface_doc.md](./md/iflytek_asr_interface_doc.md) 语音听写（硬件 PCM 采样，CPU 占用 < 3%），快速录入口述想法。
+3. 主屏撰写时按住语音键，调用 [iflytek_asr_interface_doc.md](./iflytek_asr_interface_doc.md) 语音听写（硬件 PCM 采样，CPU 占用 < 3%），快速录入口述想法。
 4. 点击主屏 Markdown 中的页码链接 `[P14]`，副屏 PDF 平滑跳转至目标页。
 
 #### 4. 硬件性能表现评估
@@ -84,7 +84,7 @@
 1. 开发者在主屏 Termux 中跑 Shell 脚本、编译 C++/Rust 代码或 SSH 连服务器；V900 8 核 A73 保证了多线程编译速度。
 2. 副屏仪表盘实时呈现 CPU 8 核的占用曲线、内存流图及 8080 端口数据包流。
 3. 当副屏捕获到异常进程 PID 导致 CPU 飙升时，点击副屏 `[Kill PID]` 警报按钮，通过跨屏 IPC 自动在主屏 Termux 执行 `kill -9 <PID>`。
-4. 结合 [md/dscr.md](./md/dscr.md) 的 `SurfaceControl.Transaction` 后台机制，无感录制双屏运维操作全过程。
+4. 结合 [dscr.md](./dscr.md) 的 `SurfaceControl.Transaction` 后台机制，无感录制双屏运维操作全过程。
 
 #### 4. 硬件性能表现评估
 - **总 RAM 占用**：约 **110 MB** (极低)
@@ -108,7 +108,7 @@
 #### 3. 用户使用细节与工作流
 1. 收银员在主屏扫码或改价，主屏与副屏同时通过共享单例刷新商品列表。
 2. 点击结算时，副屏自动从宣传视频优雅切为高亮支付二维码；顾客扫码后副屏展示五星评价界面。
-3. 副屏配置 `excludeFromRecents="true"` 并在按 HOME 键时触发 [md/chip.md](./md/chip.md) 2.6c 节的 `Process.killProcess()` 硬杀清理，确保收银账目安全与进程无残留。
+3. 副屏配置 `excludeFromRecents="true"` 并在按 HOME 键时触发 [chip.md](./chip.md) 2.6c 节的 `Process.killProcess()` 硬杀清理，确保收银账目安全与进程无残留。
 
 #### 4. 硬件性能表现评估
 - **总 RAM 占用**：约 **180 MB**
@@ -144,7 +144,7 @@
 
 #### 1. 为什么 1+1 两个 PAD 无法替代？
 - 如果用 2 个 Pad：主屏导播和副屏预监画面无法同时无缝录屏；副屏点按钮播放掌声，声轨无法在 Pad A 录像中高清混音（除非用物理音频线串接）。
-- **双屏异显 APK**：凭借 [md/dscr.md](./md/dscr.md) 的 SurfaceFlinger 机制，**单设备 VPU 同时把主副屏录制为 2 路高清 MP4 文件**；音轨在设备内存直接混频，效果媲美专业广播级导播台！
+- **双屏异显 APK**：凭借 [dscr.md](./dscr.md) 的 SurfaceFlinger 机制，**单设备 VPU 同时把主副屏录制为 2 路高清 MP4 文件**；音轨在设备内存直接混频，效果媲美专业广播级导播台！
 
 #### 2. 开源项目选型与硬件适配
 - **主屏 (Display 0)**：[NewPipe](https://github.com/TeamNewPipe/NewPipe) / 导播控制器 (音轨混音/弹幕流)
@@ -152,7 +152,7 @@
 
 #### 3. 用户使用细节与工作流
 1. **提词与声效联动**：主屏控制录制进度；副屏以大字号平滑滚动台词。副屏点击“掌声/欢呼”按键，音频实时混入录制流。
-2. **双路 H.264 零 CPU 后台录像**：调用 [md/dscr.md](./md/dscr.md) 的 `SurfaceControl.Transaction` 绑 LayerStack，将主副屏画面交由 V900 芯片的 `MediaCodec` 硬件编码器硬编输出 MP4，**完全零 CPU 软编损耗**。
+2. **双路 H.264 零 CPU 后台录像**：调用 [dscr.md](./dscr.md) 的 `SurfaceControl.Transaction` 绑 LayerStack，将主副屏画面交由 V900 芯片的 `MediaCodec` 硬件编码器硬编输出 MP4，**完全零 CPU 软编损耗**。
 
 #### 4. 硬件性能表现评估
 - **总 RAM 占用**：约 **260 MB**
@@ -176,7 +176,7 @@
 ## 🛠️ 知识库技术支撑
 
 本项目组合完全依托于我们的知识库：
-- **防呆与生命周期**：引用 [md/chip.md](./md/chip.md) 2.4/2.6c 节 `setLaunchDisplayId` 与 `Process.killProcess()`。
-- **免弹窗双路录屏**：引用 [md/dscr.md](./md/dscr.md) 的 SurfaceFlinger LayerStack 硬编码。
-- **语音听写输入**：引用 [md/iflytek_asr_interface_doc.md](./md/iflytek_asr_interface_doc.md) 从 `Settings.Global` 读取共享凭证。
-- **闭环与开发铁律**：遵循 [md/dev-iron-rules.md](./md/dev-iron-rules.md) 的自测闭环与死磕标准。
+- **防呆与生命周期**：引用 [chip.md](./chip.md) 2.4/2.6c 节 `setLaunchDisplayId` 与 `Process.killProcess()`。
+- **免弹窗双路录屏**：引用 [dscr.md](./dscr.md) 的 SurfaceFlinger LayerStack 硬编码。
+- **语音听写输入**：引用 [iflytek_asr_interface_doc.md](./iflytek_asr_interface_doc.md) 从 `Settings.Global` 读取共享凭证。
+- **闭环与开发铁律**：遵循 [dev-iron-rules.md](./dev-iron-rules.md) 的自测闭环与死磕标准。
