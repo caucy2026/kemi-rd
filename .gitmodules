@@ -1,4 +1,0 @@
-[submodule "koffice/upstream"]
-	path = koffice/upstream
-	url = https://github.com/CollaboraOnline/online.mirror.git
-	shallow = true
