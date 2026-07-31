@@ -28,6 +28,7 @@ kemi-rd/
     ├── chip.md                         # 芯片平台 & 双屏异显实战手册
     ├── ci-build.md                     # 本地、云端构建协调与加速
     ├── cross-display-keyboard.md       # 跨屏软键盘需求与设计
+    ├── deepseek-quant-plan.md          # DeepSeek 智能量化交易系统规划
     ├── dev-iron-rules.md               # 底层开发铁律
     ├── dscr.md                         # 免弹窗无感双屏录制
     ├── huawei-apk-trust-rustdesk.md    # 华为设备 APK 签名与分发合规
@@ -54,6 +55,7 @@ kemi-rd/
 | 📄 **[iflytek_asr_interface_doc.md](./md/iflytek_asr_interface_doc.md)** | **系统级语音听写指南**：基于 `Settings.Global` 凭证共享，无需应用申请 Key，支持"按住说话"（Hold-to-Speak）与"自动聆听"（Auto-Listen）状态机。 |
 | 📄 **[reseach.md](./md/reseach.md)** | **硬件算力与开源组合调研报告**：结合 V900/RK356x 芯片（6G RAM, 8核 A73, Mali-G52）精准评估 5 大双屏开源项目组合的 CPU/GPU 内存负载。 |
 | 📄 **[stock-software-selection.md](./md/stock-software-selection.md)** | **双屏股票软件开源组合选型**：对比 Android 图表、A 股行情、研究与交易后端，给出只读行情、模拟交易和真实交易评审的分阶段架构。 |
+| 📄 **[deepseek-quant-plan.md](./md/deepseek-quant-plan.md)** | **DeepSeek 智能量化交易系统规划**：用户只需填入 DeepSeek API Key 即可独立运行。涵盖 AI 选股、AI 看盘、AI 策略生成、AI 财报解读、量化回测、模拟交易的全架构设计和 6 阶段实施路线。 |
 | 📄 **[requirements_v2.md](./md/requirements_v2.md)** | **STK 双屏对战完整需求文档 v2.0**：双屏独立渲染架构、虚拟方向盘操控、道具/漂移系统、局域网对战协议、AI 行为树等。 |
 | 📄 **[android-http-file-server.md](./md/android-http-file-server.md)** | **Android 内置 HTTP 文件分发服务**：零配置局域网文件分发，内置 HTTP Server + NanoHTTPD，支持 Windows 客户端一键下载安装。 |
 | 📄 **[ci-build.md](./md/ci-build.md)** | **本地、云端构建协调与加速**：分支策略、CI 触发器、候选版本身份、Rust/Gradle/Flutter/NDK 缓存分层与实施优先级。 |
