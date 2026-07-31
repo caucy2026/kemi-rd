@@ -26,14 +26,17 @@ kemi-rd/
 └── md/                                 # 核心 Markdown 技术与规范文档
     ├── android-http-file-server.md     # Android 内置 HTTP 文件分发服务
     ├── chip.md                         # 芯片平台 & 双屏异显实战手册
+    ├── ci-build.md                     # 本地、云端构建协调与加速
     ├── cross-display-keyboard.md       # 跨屏软键盘需求与设计
     ├── dev-iron-rules.md               # 底层开发铁律
     ├── dscr.md                         # 免弹窗无感双屏录制
+    ├── huawei-apk-trust-rustdesk.md    # 华为设备 APK 签名与分发合规
     ├── iflytek_asr_interface_doc.md    # 系统级语音听写对接指南
     ├── requirements_v2.md              # STK 双屏对战完整需求文档 v2.0
     ├── reseach.md                      # 双屏开源组合与硬件算力调研报告
+    ├── rule.md                         # 开发行为规范 (CLAUDE.md)
     ├── stock-software-selection.md     # 双屏股票软件开源组合选型
-    └── rule.md                         # 开发行为规范 (CLAUDE.md)
+    └── vibecoding-prompt.md            # 双屏 AI Vibe-Coding 系统提示词
 ```
 
 ---
@@ -43,15 +46,18 @@ kemi-rd/
 | 文档名称 | 核心职责与关键能力 |
 | :--- | :--- |
 | 📄 **[chip.md](./md/chip.md)** | **芯片平台 & 双屏异显实战手册（主文档）**：双 Activity & Presentation 架构、D2 误启动硬件级反射重定向（`setLaunchDisplayId`）、生命周期与 `Process.killProcess` 进程清理、WiFi ADB 部署与踩坑全集。 |
+| 📄 **[vibecoding-prompt.md](./md/vibecoding-prompt.md)** | **双屏 AI Vibe-Coding 系统提示词**：自包含的系统级 Prompt，涵盖硬件、双屏架构模板、防呆、生命周期、跨屏通信、键盘、录制、语音和编码铁律。粘贴到 AI 编程工具即可直接生成可编译的双屏 APK。 |
 | 📄 **[cross-display-keyboard.md](./md/cross-display-keyboard.md)** | **跨屏软键盘需求与设计**：双屏设备软键盘行为、状态模型、原生与 Flutter 职责边界，以及重构和验收标准。 |
 | 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底），杜绝退缩与未验证交付。 |
+| 📄 **[rule.md](./md/rule.md)** | **开发行为规范（CLAUDE.md）**：保持代码精简干净，外科手术式修改，严禁过度设计。 |
 | 📄 **[dscr.md](./md/dscr.md)** | **免弹窗无感双屏录制**：基于 `SurfaceControl.Transaction` 隐藏 API 的底层录影方案，直接绑定 SurfaceFlinger 图层栈自动灌帧硬编码，无需 `MediaProjection` 弹窗。 |
 | 📄 **[iflytek_asr_interface_doc.md](./md/iflytek_asr_interface_doc.md)** | **系统级语音听写指南**：基于 `Settings.Global` 凭证共享，无需应用申请 Key，支持"按住说话"（Hold-to-Speak）与"自动聆听"（Auto-Listen）状态机。 |
 | 📄 **[reseach.md](./md/reseach.md)** | **硬件算力与开源组合调研报告**：结合 V900/RK356x 芯片（6G RAM, 8核 A73, Mali-G52）精准评估 5 大双屏开源项目组合的 CPU/GPU 内存负载。 |
 | 📄 **[stock-software-selection.md](./md/stock-software-selection.md)** | **双屏股票软件开源组合选型**：对比 Android 图表、A 股行情、研究与交易后端，给出只读行情、模拟交易和真实交易评审的分阶段架构。 |
 | 📄 **[requirements_v2.md](./md/requirements_v2.md)** | **STK 双屏对战完整需求文档 v2.0**：双屏独立渲染架构、虚拟方向盘操控、道具/漂移系统、局域网对战协议、AI 行为树等。 |
 | 📄 **[android-http-file-server.md](./md/android-http-file-server.md)** | **Android 内置 HTTP 文件分发服务**：零配置局域网文件分发，内置 HTTP Server + NanoHTTPD，支持 Windows 客户端一键下载安装。 |
-| 📄 **[rule.md](./md/rule.md)** | **开发行为规范（CLAUDE.md）**：保持代码精简干净，外科手术式修改，严禁过度设计。 |
+| 📄 **[ci-build.md](./md/ci-build.md)** | **本地、云端构建协调与加速**：分支策略、CI 触发器、候选版本身份、Rust/Gradle/Flutter/NDK 缓存分层与实施优先级。 |
+| 📄 **[huawei-apk-trust-rustdesk.md](./md/huawei-apk-trust-rustdesk.md)** | **华为设备 APK 签名与分发合规**：RustDesk 移植版发布签名、包名、远控合规和华为 AppGallery 审核要点。 |
 
 ---
 
