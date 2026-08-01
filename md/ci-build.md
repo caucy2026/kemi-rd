@@ -569,261 +569,144 @@ focused run：
 ```
 
 任何未知项明确写“未完成/待验证”，不能用“正在构建”“应该可以”代替真实状态。
-## 19. 云端构建加速
+## 19. KOffice Android 云端构建加速
 
-KEMI 技术栈涉及 Flutter (Dart)、Rust (Cargo)、Android (Gradle/NDK) 和 vcpkg C++ 依赖，
-云端 Linux runner 只有 2 核 7GB RAM。以下缓存策略按效果从大到小排列，每个都有可复制的
-YAML 片段。
+本节只适用于当前 `.github/workflows/koffice-build.yml`：在 Ubuntu 上交叉编译
+LibreOffice/Collabora Android arm64-v8a 引擎，再构建 Debug APK。此前关于 RustDesk、
+Flutter、Cargo、vcpkg、Windows/Linux 客户端的缓存方案不适用于此仓库，不能直接复制。
 
-### 19.1 缓存分层模型
+### 19.1 先满足可构建性
 
-| 层级 | 缓存内容 | key 策略 | 典型命中率 | 节省时间 |
-| :--- | :--- | :--- | :--- | :--- |
-| L1 | Rust Cargo registry + target | `hashFiles(Cargo.lock)` | ~95% | 20–40 min |
-| L2 | Gradle wrapper + 依赖 | `hashFiles(gradle-wrapper.properties, **/*.gradle*)` | ~95% | 3–8 min |
-| L3 | Flutter pub cache | `hashFiles(pubspec.yaml, pubspec.lock)` | ~95% | 2–5 min |
-| L4 | vcpkg 预编译包 | 固定版本号 | ~100%（7 天过期） | 5–15 min |
-| L5 | NDK 工具链 | 固定版本号 | ~100% | 2–3 min |
-| L6 | ccache C/C++ 编译对象 | `hashFiles(**/*.rs, **/*.cpp, **/Cargo.toml)` | ~80% | 10–30 min |
+当前工作流访问 `koffice/upstream`、`koffice/patches` 和 `koffice/scripts`。候选提交必须
+包含这些目录，或以已初始化的 Git submodule/明确 checkout 步骤提供它们；仅设置
+`actions/checkout` 的 `submodules: true` 不会凭空取得未登记在 `.gitmodules` 的源码。
 
-GitHub Actions 缓存总配额为 10 GB / 仓库。超过后旧缓存会被自动驱逐，因此各层必须
-控制大小：L1 Cargo target 只缓存依赖 crate 产物，不缓存自身项目的频繁增量编译输出。
-
-### 19.2 Rust / Cargo
-
-最重的缓存项。每个平台（Windows/Linux）至少下载和编译 200+ crate。
-
-**swatinem/rust-cache（推荐，零配置首选）：**
+触发器必须覆盖子目录，而不是只匹配目录名：
 
 ```yaml
-- uses: swatinem/rust-cache@v2
-  with:
-    workspaces: |
-      src-tauri -> src-tauri/target
-    cache-directories: |
-      ~/.cargo/registry
-    shared-key: ${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+on:
+  push:
+    paths:
+      - 'koffice/patches/**'
+      - 'koffice/scripts/**'
+      - 'koffice/upstream/**'
+      - '.github/workflows/koffice-build.yml'
 ```
 
-它自动识别 `Cargo.toml`、`Cargo.lock` 和 `rust-toolchain.toml` 变化，精准决定是否
-重建缓存。比手动 `actions/cache` 少很多边缘情况。
+在这个前提未满足前，缓存和 runner 调优没有实际收益。
 
-**手动方案（需要更细粒度控制时）：**
+### 19.2 GitHub Pro 的性能边界
+
+公开仓库的标准 `ubuntu-24.04` 是 4 vCPU、16 GB RAM、14 GB SSD；因此当前
+`make -j$(nproc)` 最多使用四条编译任务。私有仓库使用同一标签时则是 2 vCPU、8 GB RAM。
+不要把标准公开 runner 误认为 8 核；实际 run 应记录 `nproc` 输出。GitHub Pro 个人账户不能
+开通 GitHub-hosted larger runners；该功能仅向 GitHub Team 或 Enterprise Cloud 的组织提供。
+
+目标是缩短单次完整 LibreOffice 构建时，优先级如下：
+
+1. 先完成本节的零下载、非调试、ccache 和 Gradle 缓存优化；
+2. 仍不满足时，迁移仓库到 GitHub Team 组织并配置 larger runner；
+3. 或使用预装 NDK、SDK 和依赖的自托管云 runner（建议至少 8 vCPU / 32 GB RAM）。
+
+larger runner 按运行分钟额外计费，且不能使用私有仓库的包含分钟数。不要为了轻量检查
+使用 `ubuntu-slim`，它只有 1 vCPU，且不适合重型构建。
+
+### 19.3 消除每次下载的 NDK 与 SDK
+
+截至本文更新时，GitHub `ubuntu-24.04` 镜像已预装 NDK `28.2.13676358`、
+`platforms;android-36` 和 `build-tools;36.0.0`。现有 workflow 先删除所有 NDK 的
+`toolchains`，再下载并解压同一 NDK，这是最直接的性能损失。
+
+常规构建不得删除 `/usr/local/lib/android/sdk/ndk/*/toolchains`，也不应对已预装的
+Android 36 运行 `sdkmanager --install`。改为显式使用并验证预装路径：
 
 ```yaml
-- uses: actions/cache@v4
-  with:
-    path: |
-      ~/.cargo/registry/index
-      ~/.cargo/registry/cache
-      ~/.cargo/git
-    key: cargo-registry-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-    restore-keys: cargo-registry-${{ runner.os }}-
+env:
+  ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+  ANDROID_NDK_HOME: /usr/local/lib/android/sdk/ndk/28.2.13676358
 
-- uses: actions/cache@v4
-  with:
-    path: src-tauri/target
-    key: cargo-target-${{ runner.os }}-${{ hashFiles('**/Cargo.lock', '**/*.rs') }}
-    restore-keys: cargo-target-${{ runner.os }}-
+# 在 build 前验证；镜像变更时立即失败并记录，不静默下载不同工具链
+- name: Verify Android toolchain
+  run: |
+    set -euo pipefail
+    test -x "$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
+    test -d "$ANDROID_SDK_ROOT/platforms/android-36"
+    test -d "$ANDROID_SDK_ROOT/build-tools/36.0.0"
 ```
 
-注意：`registry` 和 `target` 必须分两个 key。改一行 `.rs` 不应该让已下载的 crate 源码
-重新下载。
+若固定版本将来从镜像移除，先更新版本并验证构建；只有确实必须使用非预装 NDK 时才单独
+缓存用户可写目录中的 NDK。不要缓存或覆盖 `/usr/local/lib` 下的系统 SDK。
 
-### 19.3 Flutter / Dart
+### 19.4 编译模式：候选构建不能默认调试引擎
 
-```yaml
-- uses: subosito/flutter-action@v2
-  with:
-    flutter-version: '3.22.3'
-    cache: true
-    cache-key: flutter-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
-```
+`--enable-dbgutil` 和 `--enable-debug` 会明显拉长 LibreOffice 编译时间。常规候选 APK
+应使用发布型引擎配置；只有诊断问题时，才由 `workflow_dispatch` 输入显式开启这两个选项。
+Debug APK 的 Gradle variant 与 LibreOffice 的 `dbgutil` 引擎不是同一概念，不能因为需要
+`assembleDebug` 就默认启用后者。
 
-`subosito/flutter-action` 的 `cache: true` 会自动缓存 `$FLUTTER_ROOT` 和
-`~/.pub-cache`。如果没有用这个 action，手动缓存：
+每次修改该策略都必须对产物执行启动和核心功能验收；若调试选项被关闭后出现问题，建立
+独立的诊断 run，不要把慢速配置放回所有候选构建。
 
-```yaml
-- uses: actions/cache@v4
-  with:
-    path: |
-      /opt/hostedtoolcache/flutter
-      ~/.pub-cache
-    key: flutter-${{ runner.os }}-${{ hashFiles('**/pubspec.lock') }}
-```
+### 19.5 ccache：必须命中，且缓存必须可更新
 
-### 19.4 Android / Gradle
+ccache 的收益取决于真实编译器调用经过 ccache，而不是仅安装了 `ccache` 或执行
+`ccache -s`。构建前应设置适合当前构建系统的 compiler launcher/wrapper，并在构建结束后
+记录 `cache hit (direct)`、`cache hit (preprocessed)` 和 `cache miss`。命中数为零时，先修复
+wrapper，再讨论缓存容量。
 
-```yaml
-- uses: gradle/actions/setup-gradle@v4
-  with:
-    cache-read-only: ${{ github.ref != 'refs/heads/master' }}
-```
+GitHub Actions cache 不可覆盖。现有固定 key
+`Linux-koffice-arm64-ndk28-ccache-v1` 只会保存第一次成功构建的内容，之后即使产生新的
+对象也无法更新同一个缓存。应改用专门维护轮换 key 的 ccache action，或使用“本次 run 的
+唯一保存 key + 稳定 restore 前缀”的策略，并将 ccache 上限控制在 1–2 GB。
 
-`setup-gradle@v4` 同时缓存 `~/.gradle/caches` 和 `~/.gradle/wrapper`，远比
-`actions/setup-java` 自带的 `cache: gradle` 更完整。
+不要把 5 GB ccache 与其他大型缓存同时放入默认 10 GB 仓库配额；缓存超过配额会驱逐旧项，
+导致反复冷启动。只允许默认分支写缓存，PR/工作分支仅恢复。
 
-如果项目没有迁移到这个 action，用 `actions/cache` 手动替代：
+### 19.6 Gradle、checkout 与系统依赖
 
-```yaml
-- uses: actions/cache@v4
-  with:
-    path: |
-      ~/.gradle/caches
-      ~/.gradle/wrapper
-    key: gradle-${{ runner.os }}-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-    restore-keys: gradle-${{ runner.os }}-
-```
+1. 使用 `gradle/actions/setup-gradle` 管理 Gradle User Home，并以 `cache-read-only` 让
+   非默认分支只读。构建命令先验证兼容性后启用 `--build-cache`；configuration cache 需由
+   Gradle 报告确认兼容后再启用。
+2. 若版本号或构建脚本不依赖完整 Git 历史，把 `actions/checkout` 的 `fetch-depth` 从 `0`
+   改为 `1`。使用 submodule 时同时确认其 shallow checkout 与构建脚本兼容。
+3. 先做依赖探测，仅对确实缺失的 apt 包执行 `apt-get update/install`。预装镜像已包含
+   autoconf、automake、bison、flex、libtool、gcc/g++ 等常用工具；不可假设所有库都存在。
+4. 把“释放磁盘”限制为确认无用的目录；不要删除随后要使用的 Android 工具链。若完整构建
+   仍接近磁盘上限，先记录 `df -h` 和最大目录，再决定删除目标。
 
-### 19.5 NDK 工具链
+### 19.7 制品与发布链路
 
-NDK 完整包约 1.5 GB，每次下载非常慢。两种方案：
+build workflow 上传的 artifact 名为 `koffice-native-libs`，而 promote workflow 下载的是
+`koffice-debug-apk`。这两个名字必须统一，并且 build 必须实际上传 APK，promote 才能不重编
+而发布。该修复不直接缩短编译时间，但能避免“编译成功后因制品不存在而重新构建”的浪费。
 
-**方案 A — 用 runner 预装的 NDK（零下载）：**
+### 19.8 验证与量化标准
 
-```bash
-ls "$ANDROID_HOME/ndk/"
-```
+一次变更只做一项，并记录以下字段：
 
-如果命中了项目使用的版本，直接在 `local.properties` 或环境变量引用即可。
+| 项目 | 必须记录 |
+|---|---|
+| runner | 标签、vCPU、RAM、镜像版本 |
+| setup | checkout、apt、NDK/SDK 各自耗时 |
+| 编译 | engine、app layer、Gradle 各自耗时 |
+| ccache | direct/preprocessed hit、miss、缓存大小 |
+| Gradle | 依赖缓存、build cache、configuration cache 命中情况 |
+| 产物 | APK SHA-256、大小、安装与启动验收 |
 
-**方案 B — 缓存自定义 NDK 路径：**
+只有在相同 commit 或重复的无源码变更 run 中对比，才能认定优化有效。缓存冷启动、工具链
+变更和源码大改不能与热缓存结果混为一谈。
 
-```yaml
-- uses: actions/cache@v4
-  with:
-    path: ${{ env.ANDROID_NDK_HOME }}
-    key: ndk-${{ runner.os }}-r27c
-```
+### 19.9 实施顺序
 
-version 固定、不随源码变化，命中率接近 100%。
+1. 补齐源码取得方式、路径触发器和 artifact 名称；
+2. 移除 NDK/SDK 的删除与重复下载；
+3. 将 dbgutil/debug 改为仅手动诊断；
+4. 验证 ccache wrapper，替换不可更新的固定 cache key；
+5. 接入 Gradle 缓存并测量；
+6. 仅在上述优化后的完整构建仍不可接受时，采用 Team larger runner 或自托管云 runner。
 
-### 19.6 ccache / sccache（C/C++/Rust 编译对象缓存）
-
-RustDesk 的 `lib.rs` 或 C++ bridge 层在未改动时不需重编译。ccache 把编译输出按
-预处理后的源文件哈希保存，未变化的翻译单元直接跳过：
-
-```yaml
-- name: Setup ccache
-  uses: hendrikmuhs/ccache-action@v1
-  with:
-    key: ccache-${{ runner.os }}-${{ github.ref_name }}
-    restore-keys: ccache-${{ runner.os }}-
-    max-size: 2G
-```
-
-然后在构建前确保编译器经 ccache 包装：
-
-```bash
-export CC="ccache gcc"
-export CXX="ccache g++"
-```
-
-`sccache` 对 Rust 更友好，支持 Cargo 增量编译 + 远程存储：
-
-```yaml
-- name: Setup sccache
-  uses: mozilla-actions/sccache-action@v0
-```
-
-在 `Cargo.toml` 同级创建 `.cargo/config.toml`：
-
-```toml
-[build]
-rustc-wrapper = "sccache"
-```
-
-### 19.7 vcpkg C++ 依赖
-
-RustDesk 的 Windows 构建可能通过 vcpkg 拉取 C++ 库。缓存 vcpkg 的已编译包：
-
-```yaml
-- uses: actions/cache@v4
-  with:
-    path: |
-      ${{ github.workspace }}/vcpkg/installed
-      ${{ github.workspace }}/vcpkg/downloads
-    key: vcpkg-${{ runner.os }}-${{ hashFiles('vcpkg.json') }}
-```
-
-### 19.8 构建矩阵并行化
-
-把不同平台和 ABI 拆成独立 job 并行执行。KEMI 当前 focused workflow 已拆分
-Windows 和 Linux 两个 job，可以进一步拆：
-
-```yaml
-strategy:
-  matrix:
-    platform: [windows-x64, linux-x86_64]
-    include:
-      - platform: windows-x64
-        runs-on: windows-2022
-      - platform: linux-x86_64
-        runs-on: ubuntu-24.04
-```
-
-每增加一个并行 job 就增加一份 runner 并发配额消耗。应先确保单 job 缓存命中后仍
-超过 20 分钟，再拆分；否则拆分带来的并行收益会被冷缓存抵消。
-
-### 19.9 缓存只读策略
-
-只有 `master` 分支保存（save）缓存。WIP 分支和 PR 只恢复（restore）但不写回，
-防止几十个 WIP 分支撑爆 10 GB 配额：
-
-| 动作 | `setup-gradle@v4` | `actions/cache@v4` |
-| :--- | :--- | :--- |
-| 只恢复 | `cache-read-only: true` | 用 `actions/cache/restore@v4` 替代 `actions/cache@v4` |
-| 保存 | 仅在 `master` 的 `cache-read-only: false` | 仅在 `master` 用 `actions/cache/save@v4` 显式保存 |
-
-```yaml
-- name: Restore caches (read-only on non-master)
-  if: github.ref != 'refs/heads/master'
-  uses: actions/cache/restore@v4
-  with:
-    path: ~/.cargo/registry
-    key: cargo-registry-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-
-- name: Restore and save cache (master only)
-  if: github.ref == 'refs/heads/master'
-  uses: actions/cache@v4
-  with:
-    path: ~/.cargo/registry
-    key: cargo-registry-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-```
-
-### 19.10 其他零成本提速
-
-- **`actions/checkout` 浅克隆**：`fetch-depth: 1`，关闭 `show-progress` 和
-  `lfs: false`（如果不依赖 Git LFS）。
-- **锁定工具版本，不要每次 `latest`**：`flutter-version: '3.22.3'` 而非
-  `'stable'`，避免 runner 每周下载新版 SDK。
-- **`paths-ignore` 加全**：当前 focused workflow 已忽略 `docs/**` 和
-  `kemi-docs/**`，还可以加 `*.md`、`.github/ISSUE_TEMPLATE/**` 等非构建路径。
-- **避免 `npm install` 在关键路径**：如果 bridge 构建不需要每次都跑 `npm ci`，
-  把 web 前端静态资源放在预构建 artifact 中复用。
-- **Job 超时设上限**：`timeout-minutes: 45` 防止 hung 进程吃掉全部配额。
-
-### 19.11 实施优先级
-
-按投入产出比排序，建议分三批：
-
-**第一批（零风险，直接加）：**
-
-1. `swatinem/rust-cache@v2` — 收益最明显，Rust crate 下载+编译占总时长 60%+
-2. `gradle/actions/setup-gradle@v4` — 解决 Gradle 依赖反复下载
-3. `subosito/flutter-action@v2` + `cache: true` — Pub 依赖缓存
-4. `fetch-depth: 1` — checkout 提速
-
-**第二批（需要验证后加）：**
-
-5. `hendrikmuhs/ccache-action@v1` 或 `sccache` — 跳过未改动的 C/C++/Rust 编译单元
-6. NDK 缓存 — 先确认 runner 是否已预装目标版本
-7. vcpkg 缓存 — 仅 Windows job 需要
-
-**第三批（缓存稳定后再做）：**
-
-8. 缓存只读策略 — 防止 WIP 分支撑爆配额
-9. 构建矩阵拆分 — 仅在单 job 缓存命中后仍超 20 min 时做
-
-每批完成后记录典型 run 的时长和缓存命中率，再做下一批。不要一次性加完所有
-缓存步骤后盲目合并——每种缓存都有 key 设计错误或路径遗漏的可能，必须分开验证。
+参考：GitHub-hosted runner 规格与 larger runner 限制：
+https://docs.github.com/en/actions/reference/runners/github-hosted-runners 、
+https://docs.github.com/en/actions/concepts/runners/larger-runners 。Ubuntu 24.04 预装软件：
+https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md 。缓存行为和
+配额：https://docs.github.com/en/actions/reference/workflows-and-actions/dependency-caching 。
