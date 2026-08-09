@@ -2,6 +2,8 @@
 
 > 目标：让PAD、Windows、macOS、Linux等多端产品，用一个简单、稳定、可追溯的入口下载对应客户端。本文以`KEMI-SEND`为完整实例，同时可作为其他KEMI项目的通用模板。
 
+> 2026-08-09补充：新客户端云端入口统一改用HBBC原生HTTPS `21121`；HTTP `21120`只保留给旧客户端兼容和服务器本机健康检查。PAD局域网下载仍使用动态私网IP的HTTP。完整分工见 `../md/hbbc-http-https-service-guide.md`。
+
 ## 0. 先说结论：页面地址和资源地址都可以提前约定
 
 KEMI-SEND可以在客户端尚未构建、云端文件尚未上传时，先把页面和六个资源的固定地址全部约定好。后续发布只替换文件，不改客户端、不改hbbc程序，也不改用户访问入口。
@@ -10,7 +12,7 @@ KEMI-SEND可以在客户端尚未构建、云端文件尚未上传时，先把�
 
 | 地址层级 | 由谁控制 | 能否提前确定 | KEMI-SEND示例 |
 |---|---|---|---|
-| hbbc云端页面 | `hbbc.json`中的`public_base_url + sites[].path` | 可以 | `http://kemi-chat.newlinksz.com:21120/kemi-send` |
+| hbbc云端页面 | `hbbc.json`中HTTPS基址` + sites[].path` | 可以 | `https://kemi-chat.newlinksz.com:21121/kemi-send` |
 | 各平台稳定下载路由 | JSON中的页面`path + assets[].id` | 可以 | `/kemi-send/download/windows` |
 | Newlink固定资源查询地址 | 管理员后台确定的`projectName + name`；JSON保存同一组值 | 可以，推荐开发前约定 | `https://www.newlinksz.cn/screensaver/api/plugData?projectName=Common&name=KEMI-Send-Windows` |
 | 本次文件实际CDN地址 | 管理员上传文件后由Newlink后台在plugData的`data[0].url`返回 | 不能可靠写死 | `https://cdn.newlink-sz.com/...` |
@@ -23,7 +25,7 @@ KEMI-SEND可以在客户端尚未构建、云端文件尚未上传时，先把�
 建议KEMI-SEND直接采用第一种方式，提前冻结以下约定：
 
 ```text
-云端页面：http://kemi-chat.newlinksz.com:21120/kemi-send
+云端页面：https://kemi-chat.newlinksz.com:21121/kemi-send
 后台项目：Common
 资源name：
   KEMI-Send-PAD
@@ -41,7 +43,7 @@ KEMI-SEND可以在客户端尚未构建、云端文件尚未上传时，先把�
 KEMI快传的“客户端下载”页只需要让普通用户理解两个主入口：
 
 1. **同局域网下载**：从当前PAD的本地HTTP服务下载，速度快，适合同一Wi-Fi且设备允许互访的现场。
-2. **云端下载**：打开固定地址`http://kemi-chat.newlinksz.com:21120/kemi-send`，不要求下载设备能访问PAD的局域网IP。
+2. **云端下载**：打开固定HTTPS地址`https://kemi-chat.newlinksz.com:21121/kemi-send`，不要求下载设备能访问PAD的局域网IP。
 
 页面可以保留第三种“云备份下载”，但必须标注：
 
@@ -57,7 +59,7 @@ KEMI快传 - 客户端下载
 ┌─────────────────────────────────────────────────────────┐
 │ 方式一：同局域网下载     │ 方式二：云端下载             │
 │ 当前Wi-Fi：KEMI-T1      │ 无需与PAD处于同一局域网      │
-│ http://PAD-IP:8687      │ kemi-chat...:21120/kemi-send │
+│ http://PAD-IP:8687      │ kemi-chat...:21121/kemi-send │
 │ 地址本身可点击           │ 地址本身可点击               │
 └─────────────────────────────────────────────────────────┘
 
@@ -91,7 +93,7 @@ PAD       [从PAD下载] [云备份下载]  仅作为上面两种下载均失效
                                   │
                     hbbc每600秒解析、检查并保存缓存
                                   ▼
-           http://kemi-chat.newlinksz.com:21120/kemi-send
+           https://kemi-chat.newlinksz.com:21121/kemi-send
                                   │
                     稳定平台路由302到当前HTTPS文件
                                   │
@@ -107,10 +109,10 @@ PAD       [从PAD下载] [云备份下载]  仅作为上面两种下载均失效
 核心原则：
 
 - 客户端、二维码和文档只保存稳定入口，不保存每次上传后变化的CDN长地址。
-- hbbc JSON控制云端HTTP页面、站点ID、页面后缀、平台路由，并描述管理员后台已经确定或提前约定的`projectName`和固定`name`；不写某一批次的版本、哈希或动态CDN URL。
+- hbbc JSON控制云端HTTP/HTTPS页面、站点ID、页面后缀、平台路由，并描述管理员后台已经确定或提前约定的`projectName`和固定`name`；不写某一批次的版本、哈希或动态CDN URL。
 - 日常升级只替换六个云端项目；hbbc二进制、JSON、客户端页面地址都不需要更新。
 - 四端文件未全部构建并验收前，不更新正式manifest，不让用户看到半成品批次。
-- 本地HTTP与云端HTTP互补，任何一条链路失败都不能破坏另一条链路。
+- PAD本地HTTP与HBBC云端HTTPS互补，任何一条链路失败都不能破坏另一条链路。
 
 ## 3. 四个角色和交接物
 
@@ -375,19 +377,19 @@ sudo journalctl -u kemi-rustdesk-hbbc.service -n 100 --no-pager
 
 只重启`kemi-rustdesk-hbbc.service`，不重启`hbbs`、`hbbr`，不重新运行全量安装脚本。
 
-云端HTTP页面地址完全由JSON控制。`public_base_url + sites[].path`自动形成正式页面地址，因此在KEMI-SEND客户端编译前就可以确定：
+云端HTTP/HTTPS页面路径由JSON控制，新客户端使用HTTPS公开基地址。HTTPS基地址与`sites[].path`自动形成正式页面地址，因此在KEMI-SEND客户端编译前就可以确定：
 
 ```text
-http://kemi-chat.newlinksz.com:21120/kemi-send
+https://kemi-chat.newlinksz.com:21121/kemi-send
 ```
 
 自动形成四个平台稳定下载地址：
 
 ```text
-http://kemi-chat.newlinksz.com:21120/kemi-send/download/windows
-http://kemi-chat.newlinksz.com:21120/kemi-send/download/macos
-http://kemi-chat.newlinksz.com:21120/kemi-send/download/linux
-http://kemi-chat.newlinksz.com:21120/kemi-send/download/android
+https://kemi-chat.newlinksz.com:21121/kemi-send/download/windows
+https://kemi-chat.newlinksz.com:21121/kemi-send/download/macos
+https://kemi-chat.newlinksz.com:21121/kemi-send/download/linux
+https://kemi-chat.newlinksz.com:21121/kemi-send/download/android
 ```
 
 这些稳定路由也由JSON中的`sites[].path`和`assets[].id`生成，并返回302到本次Newlink HTTPS真实文件。云盘覆盖更新后，稳定路由、二维码和客户端代码都不改变。
@@ -411,11 +413,12 @@ JSON assets[].id               → hbbc平台下载路由后缀
 curl http://127.0.0.1:21120/healthz
 curl http://127.0.0.1:21120/api/v1/sites
 curl http://127.0.0.1:21120/api/v1/sites/kemi-send
-curl -I http://kemi-chat.newlinksz.com:21120/kemi-send
-curl -I http://kemi-chat.newlinksz.com:21120/kemi-send/download/windows
-curl -I http://kemi-chat.newlinksz.com:21120/kemi-send/download/macos
-curl -I http://kemi-chat.newlinksz.com:21120/kemi-send/download/linux
-curl -I http://kemi-chat.newlinksz.com:21120/kemi-send/download/android
+curl -fsS https://kemi-chat.newlinksz.com:21121/healthz
+curl -I https://kemi-chat.newlinksz.com:21121/kemi-send
+curl -I https://kemi-chat.newlinksz.com:21121/kemi-send/download/windows
+curl -I https://kemi-chat.newlinksz.com:21121/kemi-send/download/macos
+curl -I https://kemi-chat.newlinksz.com:21121/kemi-send/download/linux
+curl -I https://kemi-chat.newlinksz.com:21121/kemi-send/download/android
 ```
 
 验收标准：
@@ -432,14 +435,14 @@ curl -I http://kemi-chat.newlinksz.com:21120/kemi-send/download/android
 推荐给客户端的不是四个动态CDN地址，而是下面三项稳定配置：
 
 ```text
-cloud_download_base = http://kemi-chat.newlinksz.com:21120
+cloud_download_base = https://kemi-chat.newlinksz.com:21121
 cloud_site_id       = kemi-send
-last_known_site_url = http://kemi-chat.newlinksz.com:21120/kemi-send
+last_known_site_url = https://kemi-chat.newlinksz.com:21121/kemi-send
 ```
 
 客户端启动或进入“客户端下载”页时：
 
-1. 请求`http://kemi-chat.newlinksz.com:21120/api/v1/sites`；
+1. 请求`https://kemi-chat.newlinksz.com:21121/api/v1/sites`；
 2. 在`sites`数组按稳定`id=kemi-send`查找；
 3. 读取返回的`url`和`ready`；
 4. `ready=true`时显示“云端下载”；
@@ -477,7 +480,7 @@ missing → downloading(.part，可续传) → verifying → ready
 本地网页顶部用一个统一外边框显示两个主入口，宽屏中间用分隔线并排，窄屏在同一外框内上下排列。地址本身可点击，不再增加“打开备用地址”或重复复制按钮：
 
 1. 当前PAD本地地址，例如`http://192.168.3.86:8687`；
-2. hbbc云端页`http://kemi-chat.newlinksz.com:21120/kemi-send`。
+2. hbbc云端HTTPS页`https://kemi-chat.newlinksz.com:21121/kemi-send`。
 
 每个平台卡片显示：
 

@@ -25,6 +25,7 @@ kemi-rd/
 │   └── workflows/                      # CI/CD 工作流
 └── md/                                 # 核心 Markdown 技术与规范文档
     ├── android-http-file-server.md     # Android 内置 HTTP 文件分发服务
+    ├── hbbc-http-https-service-guide.md # PAD HTTP与HBBC云端HTTPS统一分工
     ├── chip.md                         # 芯片平台 & 双屏异显实战手册
     ├── ci-build.md                     # 本地、云端构建协调与加速
     ├── cross-display-keyboard.md       # 跨屏软键盘需求与设计
@@ -58,6 +59,7 @@ kemi-rd/
 | 📄 **[deepseek-quant-plan.md](./md/deepseek-quant-plan.md)** | **DeepSeek 智能量化交易系统规划**：用户只需填入 DeepSeek API Key 即可独立运行。涵盖 AI 选股、AI 看盘、AI 策略生成、AI 财报解读、量化回测、模拟交易的全架构设计和 6 阶段实施路线。 |
 | 📄 **[requirements_v2.md](./md/requirements_v2.md)** | **STK 双屏对战完整需求文档 v2.0**：双屏独立渲染架构、虚拟方向盘操控、道具/漂移系统、局域网对战协议、AI 行为树等。 |
 | 📄 **[android-http-file-server.md](./md/android-http-file-server.md)** | **Android 内置 HTTP 文件分发服务**：零配置局域网文件分发，内置 HTTP Server + NanoHTTPD，支持 Windows 客户端一键下载安装。 |
+| 📄 **[hbbc-http-https-service-guide.md](./md/hbbc-http-https-service-guide.md)** | **PAD本地HTTP与HBBC云端HTTPS统一说明**：明确8686/8687局域网服务、21120兼容入口、21121 HTTPS下载与账号接口、证书和验收规则。 |
 | 📄 **[ci-build.md](./md/ci-build.md)** | **本地、云端构建协调与加速**：分支策略、CI 触发器、候选版本身份、Rust/Gradle/Flutter/NDK 缓存分层与实施优先级。 |
 | 📄 **[huawei-apk-trust-rustdesk.md](./md/huawei-apk-trust-rustdesk.md)** | **华为设备 APK 签名与分发合规**：RustDesk 移植版发布签名、包名、远控合规和华为 AppGallery 审核要点。 |
 

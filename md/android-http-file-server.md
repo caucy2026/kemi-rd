@@ -3,6 +3,8 @@
 > 项目: kemi-bt-board | 版本: v1.1.2 | 整理日期: 2026-07-28
 >
 > **目的**: Android App 内置一个轻量级 HTTP 服务器，让同一局域网的 Windows 客户端通过浏览器访问并下载平台相关文件（EXE / 脚本），实现"零配置"分发。
+>
+> **2026-08-09 HTTPS补充**：PAD私网IP仍使用短生命周期HTTP；跨网下载和所有账号接口使用HBBC云端HTTPS `https://kemi-chat.newlinksz.com:21121`。完整分工见 `hbbc-http-https-service-guide.md`。
 
 ---
 
@@ -93,6 +95,24 @@
 | HTML/脚本代码内嵌生成 | 不需要额外资源文件管理，内容是动态的（IP、端口、Wi-Fi 名） |
 | EXE 放 `assets/` 目录 | APK 编译时自动打包，运行时通过 `context.assets.open()` 读取 |
 | `Content-Disposition: attachment` | 强制浏览器下载而非预览 |
+
+### 2.2 与云端HTTPS的互补
+
+本地HTTP只解决“同一局域网内从PAD高速下载”。遇到访客Wi-Fi、AP隔离、多路由级联、手机热点或不同网络时，即使两台设备都能上网，也可能无法直接访问PAD IP。
+
+此时客户端应提供第二入口：
+
+```text
+同局域网下载：http://<PAD-IP>:8686
+云端HTTPS下载：https://kemi-chat.newlinksz.com:21121/<site-path>
+```
+
+选择逻辑：
+
+1. PAD地址可达时优先本地HTTP。
+2. 本地超时或不在同一局域网时，立即切换云端HTTPS。
+3. 手机号、密码、验证码、Token、支付和管理功能一律禁止放在本地HTTP。
+4. 云端下载新项目默认使用HTTPS `21121`；HTTP `21120`只为旧客户端保留兼容。
 
 ---
 
@@ -502,12 +522,13 @@ for (port in ports) {
 
 **现象**: Chrome 等浏览器在 HTTP 页面上显示"不安全"警告。
 
-**说明**: 这是正确行为 — 局域网 HTTP 无法使用 HTTPS 证书。在 HTML 页面中添加说明让用户知道这是正常的：
+**说明**: 这是正确行为 — 局域网动态IP无法使用与公网域名匹配的 HTTPS 证书。在 HTML 页面中添加说明让用户知道这是正常的，并同时给出云端HTTPS入口：
 
 ```html
 <div class="note">
   ⚠️ 本页面通过局域网 HTTP 传输，浏览器提示"不安全"是正常现象。
   所有文件由手机直接提供，不会经过互联网。
+  如果不在同一局域网，请使用云端 HTTPS 下载。
 </div>
 ```
 
