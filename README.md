@@ -48,6 +48,7 @@ kemi-rd/
 | 文档名称 | 核心职责与关键能力 |
 | :--- | :--- |
 | 📄 **[chip.md](./md/chip.md)** | **芯片平台 & 双屏异显实战手册（主文档）**：双 Activity & Presentation 架构、D2 误启动硬件级反射重定向（`setLaunchDisplayId`）、生命周期与 `Process.killProcess` 进程清理、WiFi ADB 部署与踩坑全集。 |
+| 📄 **[dual-single-screen-launch-architecture.md](./md/dual-single-screen-launch-architecture.md)** | **双屏/单屏启动与连续画布架构**：从任意屏启动、公开 `launchDisplayId` 路由、一个渲染会话两块 Surface、触摸坐标、IME、退出联动、黑屏与抖动避坑及真机验收。 |
 | 📄 **[vibecoding-prompt.md](./md/vibecoding-prompt.md)** | **双屏 AI Vibe-Coding 系统提示词**：自包含的系统级 Prompt，涵盖硬件、双屏架构模板、防呆、生命周期、跨屏通信、键盘、录制、语音和编码铁律。粘贴到 AI 编程工具即可直接生成可编译的双屏 APK。 |
 | 📄 **[cross-display-keyboard.md](./md/cross-display-keyboard.md)** | **跨屏软键盘需求与设计**：双屏设备软键盘行为、状态模型、原生与 Flutter 职责边界，以及重构和验收标准。 |
 | 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底），杜绝退缩与未验证交付。 |
