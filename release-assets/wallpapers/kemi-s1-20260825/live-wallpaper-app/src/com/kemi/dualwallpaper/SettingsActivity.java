@@ -62,7 +62,7 @@ public final class SettingsActivity extends Activity {
         String[] labels = {
                 "01  芯片地平线 · 硬件与智能",
                 "02  神经流动 · 人与 AI",
-                "03  两种智慧 · 蓝色理性与金色创造（默认）",
+                "03  两种智慧 · 蓝色理性与金色创造",
                 "04  NPU 地球 · 本地智能与全球视野",
                 "05  云山金阙 · 当代古风",
                 "06  城市晨光 · 现代建筑",
@@ -70,10 +70,10 @@ public final class SettingsActivity extends Activity {
                 "08  黑金星河 · 克制奢华",
                 "09  机械核心 · 精密工业",
                 "10  留白秩序 · 极简设计",
-                "11  深海生境 · 自然未来"
+                "11  深海生境 · 自然未来（默认）"
         };
-        int selected = getSharedPreferences("wallpaper", MODE_PRIVATE).getInt("selected_set", 3);
-        if (selected < 1 || selected > THEME_COUNT) selected = 3;
+        int selected = getSharedPreferences("wallpaper", MODE_PRIVATE).getInt("selected_set", 11);
+        if (selected < 1 || selected > THEME_COUNT) selected = 11;
         updatePreview(preview, selected);
         ArrayAdapter<String> adapter = new ArrayAdapter<>(
                 this, android.R.layout.simple_spinner_item, labels);
@@ -97,7 +97,7 @@ public final class SettingsActivity extends Activity {
         apply.setOnClickListener(new View.OnClickListener() {
             @Override public void onClick(View view) {
                 int value = choices.getSelectedItemPosition() + 1;
-                if (value < 1 || value > THEME_COUNT) value = 3;
+                if (value < 1 || value > THEME_COUNT) value = 11;
                 getSharedPreferences("wallpaper", MODE_PRIVATE).edit().putInt("selected_set", value).apply();
                 Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
                 intent.putExtra(

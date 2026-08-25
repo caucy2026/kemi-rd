@@ -4,7 +4,7 @@
 
 ## 功能
 
-- 内置 11 套双屏主题，默认使用第 3 套“两种智慧”。
+- 内置 11 套双屏主题，保留原有单张素材，默认使用第 11 套“深海生境”。
 - D2 使用 `setN_d2.png`，D0 使用 `setN_d0.png`，保留无损画质。
 - 每张素材均为 1920×1280，点对点居中绘制。
 - 静态渲染，无动画、定时器、网络权限和后台轮询。
@@ -39,17 +39,17 @@ export KEMI_WALLPAPER_KEY_PASSWORD='***'
 ./build-release.sh
 ```
 
-产物位于 `release/双屏壁纸-v1.1.0-release.apk`。
+产物位于 `release/双屏壁纸-v1.1.1-release.apk`。
 
 ## 安装与打开
 
 ```bash
-adb install -r release/双屏壁纸-v1.1.0-release.apk
+adb install -r release/双屏壁纸-v1.1.1-release.apk
 ```
 
 安装完成后，在系统应用列表中找到并打开“**双屏壁纸**”：
 
-1. 选择一套主题（默认第 3 套“两种智慧”）。
+1. 选择一套主题（默认第 11 套“深海生境”）。
 2. 点击“应用到双屏”。
 3. 在 Android 系统壁纸确认页完成设置。
 

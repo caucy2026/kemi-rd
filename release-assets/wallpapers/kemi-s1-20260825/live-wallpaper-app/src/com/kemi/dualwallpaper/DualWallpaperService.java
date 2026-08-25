@@ -68,9 +68,9 @@ public final class DualWallpaperService extends WallpaperService {
         private void updateAssetForDisplay() {
             Display display = getDisplayContext().getDisplay();
             int displayId = display == null ? Display.DEFAULT_DISPLAY : display.getDisplayId();
-            int selectedSet = preferences == null ? 3 : preferences.getInt("selected_set", 3);
+            int selectedSet = preferences == null ? 11 : preferences.getInt("selected_set", 11);
             if (selectedSet < 1 || selectedSet > 11) {
-                selectedSet = 3;
+                selectedSet = 11;
             }
             assetName = "set" + selectedSet + (displayId == 2 ? "_d2.png" : "_d0.png");
         }

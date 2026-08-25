@@ -14,7 +14,7 @@ BUILD_TOOLS="$ANDROID_SDK_ROOT/build-tools/$BUILD_TOOLS_VERSION"
 ANDROID_JAR="$ANDROID_SDK_ROOT/platforms/android-$PLATFORM_VERSION/android.jar"
 BUILD_DIR="$APP_DIR/build/release"
 OUTPUT_DIR="$APP_DIR/release"
-OUTPUT_APK="$OUTPUT_DIR/双屏壁纸-v1.1.0-release.apk"
+OUTPUT_APK="$OUTPUT_DIR/双屏壁纸-v1.1.1-release.apk"
 
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR/classes" "$BUILD_DIR/dex" "$OUTPUT_DIR"
@@ -39,8 +39,8 @@ javac -source 8 -target 8 \
   --manifest "$APP_DIR/AndroidManifest.xml" \
   --min-sdk-version 26 \
   --target-sdk-version 31 \
-  --version-code 110 \
-  --version-name 1.1.0 \
+  --version-code 111 \
+  --version-name 1.1.1 \
   -A "$APP_DIR/assets" \
   "$BUILD_DIR/resources.zip"
 
