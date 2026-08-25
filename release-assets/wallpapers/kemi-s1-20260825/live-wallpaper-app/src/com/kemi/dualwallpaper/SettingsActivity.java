@@ -1,6 +1,7 @@
 package com.kemi.dualwallpaper;
 
 import android.app.Activity;
+import android.app.WallpaperInfo;
 import android.app.WallpaperManager;
 import android.content.ComponentName;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.Spinner;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -99,10 +101,17 @@ public final class SettingsActivity extends Activity {
                 int value = choices.getSelectedItemPosition() + 1;
                 if (value < 1 || value > THEME_COUNT) value = 11;
                 getSharedPreferences("wallpaper", MODE_PRIVATE).edit().putInt("selected_set", value).apply();
+                WallpaperManager manager = WallpaperManager.getInstance(SettingsActivity.this);
+                ComponentName component = new ComponentName(
+                        SettingsActivity.this, DualWallpaperService.class);
+                WallpaperInfo current = manager.getWallpaperInfo();
+                if (current != null && component.equals(current.getComponent())) {
+                    Toast.makeText(SettingsActivity.this, "双屏壁纸已切换", Toast.LENGTH_SHORT).show();
+                    finish();
+                    return;
+                }
                 Intent intent = new Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER);
-                intent.putExtra(
-                        WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT,
-                        new ComponentName(SettingsActivity.this, DualWallpaperService.class));
+                intent.putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, component);
                 startActivity(intent);
                 finish();
             }
