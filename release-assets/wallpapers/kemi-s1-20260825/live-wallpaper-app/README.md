@@ -4,11 +4,13 @@
 
 ## 功能
 
-- 内置三套双屏主题，默认使用第 3 套“两个智慧”。
-- D2 使用 `setN_d2.png`，D0 使用 `setN_d0.png`。
+- 内置 11 套双屏主题，默认使用第 3 套“两种智慧”。
+- D2 使用 `setN_d2.png`，D0 使用 `setN_d0.png`，保留无损画质。
 - 每张素材均为 1920×1280，点对点居中绘制。
 - 静态渲染，无动画、定时器、网络权限和后台轮询。
-- 壁纸设置页可在三套主题之间切换。
+- PNG 素材以 RGB_565 临时解码，提交到静态壁纸 Surface 后立即释放，避免两张全尺寸 Bitmap 常驻。
+- 壁纸设置页提供低内存双屏预览，可在 11 套主题之间切换。
+- 使用简约双屏应用图标，应用名称统一为“**双屏壁纸**”。
 - 安装后会在应用列表显示“**双屏壁纸**”，无需从系统隐藏的动态壁纸入口寻找。
 - `android:supportsMultipleDisplays="true"`，让 Android 为两块物理屏幕分别创建 Engine。
 
@@ -16,11 +18,11 @@
 
 ```text
 AndroidManifest.xml
-assets/                         # 三套 D2/D0 壁纸素材
+assets/                         # 11 套 D2/D0 壁纸素材
 res/xml/wallpaper.xml           # 多显示与设置页声明
 src/com/kemi/dualwallpaper/
   DualWallpaperService.java     # 按 Display ID 加载不同素材
-  SettingsActivity.java         # 三套主题选择页
+  SettingsActivity.java         # 11 套主题及双屏预览选择页
 build-release.sh                # 无 Gradle 的可复现构建脚本
 ```
 
@@ -37,12 +39,12 @@ export KEMI_WALLPAPER_KEY_PASSWORD='***'
 ./build-release.sh
 ```
 
-产物位于 `release/双屏壁纸-v1.0.1-release.apk`。
+产物位于 `release/双屏壁纸-v1.1.0-release.apk`。
 
 ## 安装与打开
 
 ```bash
-adb install -r release/双屏壁纸-v1.0.1-release.apk
+adb install -r release/双屏壁纸-v1.1.0-release.apk
 ```
 
 安装完成后，在系统应用列表中找到并打开“**双屏壁纸**”：
@@ -66,4 +68,4 @@ adb shell am start -n com.kemi.dualwallpaper/.SettingsActivity
 - Display 2：上屏
 - Display 0：下屏
 
-如果后续硬件 Display ID 改变，需要同步调整 `DualWallpaperService.loadForDisplay()`。
+如果后续硬件 Display ID 改变，需要同步调整 `DualWallpaperService.updateAssetForDisplay()`。

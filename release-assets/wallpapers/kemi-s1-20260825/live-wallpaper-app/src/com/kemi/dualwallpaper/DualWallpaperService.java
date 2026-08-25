@@ -26,8 +26,8 @@ public final class DualWallpaperService extends WallpaperService {
 
     private final class DualEngine extends Engine implements SharedPreferences.OnSharedPreferenceChangeListener {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
-        private Bitmap bitmap;
         private SharedPreferences preferences;
+        private String assetName;
 
         @Override
         public void onCreate(SurfaceHolder holder) {
@@ -37,7 +37,7 @@ public final class DualWallpaperService extends WallpaperService {
             setOffsetNotificationsEnabled(false);
             preferences = getSharedPreferences("wallpaper", MODE_PRIVATE);
             preferences.registerOnSharedPreferenceChangeListener(this);
-            loadForDisplay();
+            updateAssetForDisplay();
         }
 
         @Override
@@ -58,59 +58,48 @@ public final class DualWallpaperService extends WallpaperService {
         }
 
         @Override
-        public void onVisibilityChanged(boolean visible) {
-            if (visible) {
-                drawFrame(getSurfaceHolder());
-            }
-        }
-
-        @Override
         public void onDestroy() {
             if (preferences != null) {
                 preferences.unregisterOnSharedPreferenceChangeListener(this);
             }
-            if (bitmap != null) {
-                bitmap.recycle();
-                bitmap = null;
-            }
             super.onDestroy();
         }
 
-        private void loadForDisplay() {
+        private void updateAssetForDisplay() {
             Display display = getDisplayContext().getDisplay();
             int displayId = display == null ? Display.DEFAULT_DISPLAY : display.getDisplayId();
             int selectedSet = preferences == null ? 3 : preferences.getInt("selected_set", 3);
-            String assetName = "set" + selectedSet + (displayId == 2 ? "_d2.png" : "_d0.png");
-            if (bitmap != null) {
-                bitmap.recycle();
-                bitmap = null;
+            if (selectedSet < 1 || selectedSet > 11) {
+                selectedSet = 3;
             }
-            try (InputStream input = getAssets().open(assetName)) {
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                // Wallpapers contain no alpha. RGB_565 halves decoded memory from
-                // ~9.4 MiB to ~4.7 MiB per 1920x1280 display.
-                options.inPreferredConfig = Bitmap.Config.RGB_565;
-                options.inDither = true;
-                bitmap = BitmapFactory.decodeStream(input, null, options);
-            } catch (IOException error) {
-                throw new IllegalStateException("Unable to load " + assetName, error);
-            }
+            assetName = "set" + selectedSet + (displayId == 2 ? "_d2.png" : "_d0.png");
         }
 
         @Override
         public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key) {
             if ("selected_set".equals(key)) {
-                loadForDisplay();
+                updateAssetForDisplay();
                 drawFrame(getSurfaceHolder());
             }
         }
 
         private void drawFrame(SurfaceHolder holder) {
-            if (bitmap == null) {
+            if (assetName == null) {
                 return;
             }
+            Bitmap bitmap = null;
             Canvas canvas = null;
-            try {
+            try (InputStream input = getAssets().open(assetName)) {
+                BitmapFactory.Options options = new BitmapFactory.Options();
+                // Source PNG preserves fine gradients. RGB_565 halves the temporary
+                // decode allocation, and the bitmap is released immediately after
+                // its pixels are posted to the static wallpaper surface.
+                options.inPreferredConfig = Bitmap.Config.RGB_565;
+                options.inDither = true;
+                bitmap = BitmapFactory.decodeStream(input, null, options);
+                if (bitmap == null) {
+                    return;
+                }
                 canvas = holder.lockCanvas();
                 if (canvas == null) {
                     return;
@@ -127,9 +116,14 @@ public final class DualWallpaperService extends WallpaperService {
                 Rect source = new Rect(0, 0, bitmap.getWidth(), bitmap.getHeight());
                 Rect destination = new Rect(left, top, left + targetWidth, top + targetHeight);
                 canvas.drawBitmap(bitmap, source, destination, paint);
+            } catch (IOException error) {
+                throw new IllegalStateException("Unable to load " + assetName, error);
             } finally {
                 if (canvas != null) {
                     holder.unlockCanvasAndPost(canvas);
+                }
+                if (bitmap != null) {
+                    bitmap.recycle();
                 }
             }
         }
