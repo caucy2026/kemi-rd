@@ -51,7 +51,7 @@ kemi-rd/
 | 📄 **[dual-single-screen-launch-architecture.md](./md/dual-single-screen-launch-architecture.md)** | **双屏/单屏启动与连续画布架构**：从任意屏启动、公开 `launchDisplayId` 路由、一个渲染会话两块 Surface、触摸坐标、IME、退出联动、黑屏与抖动避坑及真机验收。 |
 | 📄 **[vibecoding-prompt.md](./md/vibecoding-prompt.md)** | **双屏 AI Vibe-Coding 系统提示词**：自包含的系统级 Prompt，涵盖硬件、双屏架构模板、防呆、生命周期、跨屏通信、键盘、录制、语音和编码铁律。粘贴到 AI 编程工具即可直接生成可编译的双屏 APK。 |
 | 📄 **[cross-display-keyboard.md](./md/cross-display-keyboard.md)** | **跨屏软键盘需求与设计**：双屏设备软键盘行为、状态模型、原生与 Flutter 职责边界，以及重构和验收标准。 |
-| 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底），杜绝退缩与未验证交付。 |
+| 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底 / 终局导向 / 低打扰协作），禁止用下一步计划代替立即行动，多智能体分工后非必要不互相打扰。 |
 | 📄 **[rule.md](./md/rule.md)** | **开发行为规范（CLAUDE.md）**：保持代码精简干净，外科手术式修改，严禁过度设计。 |
 | 📄 **[dscr.md](./md/dscr.md)** | **免弹窗无感双屏录制**：基于 `SurfaceControl.Transaction` 隐藏 API 的底层录影方案，直接绑定 SurfaceFlinger 图层栈自动灌帧硬编码，无需 `MediaProjection` 弹窗。 |
 | 📄 **[iflytek_asr_interface_doc.md](./md/iflytek_asr_interface_doc.md)** | **系统级语音听写指南**：基于 `Settings.Global` 凭证共享，无需应用申请 Key，支持"按住说话"（Hold-to-Speak）与"自动聆听"（Auto-Listen）状态机。 |
