@@ -60,6 +60,22 @@ For multi-step tasks, state a brief plan:
 
 Strong success criteria let you loop independently. Weak criteria ("make it work") require constant clarification.
 
+## 5. Preserve Proven Workflows
+
+**A workflow that passed an end-to-end verification is project knowledge, not disposable conversation memory.**
+
+- Before building, debugging, uploading, publishing, configuring a VM, injecting, signing, connecting a device, or integrating another tool, read the mandatory project docs and search for the last verified workflow.
+- Every project must keep its verified workflow records and index in the durable project context. A new session, executor, model, resumed task, or compacted context must reload them before taking action.
+- The context must state which workflow is currently stable, where its full record lives, and what evidence last verified it. Source code without its proven build, debug, deployment, and toolchain knowledge is incomplete context.
+- Use the verified workflow as the default baseline, including its versions, paths, commands, ordering, artifacts, target environment, and acceptance criteria.
+- Do not replace a mature method because time has passed, the current executor forgot it, or an unverified alternative looks easier.
+- While the recorded workflow remains applicable, do not restart research or invent a fresh debugging path for every task. Reproduce the baseline first; explore alternatives only after repeatable failure evidence.
+- Test a new method only as an isolated candidate. It may replace the baseline only after the old method has documented failure evidence and the candidate passes an equivalent or stronger end-to-end validation.
+- When a method becomes stable or changes, update the project's mandatory documentation in the same task. Record prerequisites, exact steps, outputs, evidence, failure signatures, rollback, date, and commit/artifact identity.
+- Chat history, shell history, and personal memory are not durable sources of truth. The project documentation is.
+
+The detailed inheritance and recording contract is mandatory in `md/dev-iron-rules.md`, under **铁律四：成熟方法必须继承**.
+
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.

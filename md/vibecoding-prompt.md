@@ -364,6 +364,7 @@ adb shell dumpsys meminfo com.example.dualscreen
 8. **运行时从 CDN 拉取核心 JS/CSS/资源** → 离线优先，资源打入 APK。
 9. **两个屏幕各自订阅行情/建立交易会话** → 共享仓库层统一管理连接。
 10. **生成未经验证的代码就声称"完成"** → 每段代码必须过 §7.2 闭环。
+11. **忘记已验证流程、临时发明新方法** → 任务开始先把项目必读文档和稳定方法索引装载到上下文；新会话、换模型、任务恢复或上下文压缩后必须重新加载。GitHub/CI 编译、本地编译、调试、上传发布、虚拟机、注入、签名、真机和工具联调均默认继承最后一次完整验证的方法。稳定方法仍适用时禁止重新搜索另一套调试路径；候选方法未完成同等闭环前不得替换稳定主线，验证完成后必须立即写回文档并更新上下文索引。
 
 ---
 
@@ -375,10 +376,10 @@ adb shell dumpsys meminfo com.example.dualscreen
 | :--- | :--- |
 | `md/chip.md` | 芯片、双屏架构、生命周期、防呆、部署命令 |
 | `md/cross-display-keyboard.md` | 跨屏软键盘状态机、Flutter 职责边界 |
-| `md/dev-iron-rules.md` | 路径锁定、闭环交付、死磕到底三铁律 |
+| `md/dev-iron-rules.md` | 路径锁定、闭环交付、死磕到底、成熟方法继承四铁律（所有项目必读） |
 | `md/dscr.md` | SurfaceControl 免弹窗录制实现 |
 | `md/iflytek_asr_interface_doc.md` | 讯飞语音听写鉴权与协议 |
-| `md/rule.md` | 编码行为规范（CLAUDE.md） |
+| `md/rule.md` | 编码行为规范与已验证工作流继承规则（所有项目必读） |
 | `md/reseach.md` | 硬件算力与 5 大双屏开源组合评估 |
 | `md/stock-software-selection.md` | 股票软件开源组合选型 |
 | `md/android-http-file-server.md` | 内置 HTTP 文件分发服务 |

@@ -45,14 +45,16 @@ kemi-rd/
 
 ## 📚 知识库文档索引
 
+> **所有项目启动前必读并装载到 AI/开发上下文**：`md/dev-iron-rules.md` 与 `md/rule.md`。执行 GitHub/CI 编译、本地编译、调试、上传发布、虚拟机配置、注入、签名、真机连接或工具联调前，还必须先阅读对应项目的架构、更新记录和已验证方法文档。新会话、换执行者、换模型、任务恢复或上下文压缩后必须重新加载。已有成熟流程默认继承，未经完整验证的新方法不得直接替换，也不得每次任务重新发明调试方法。
+
 | 文档名称 | 核心职责与关键能力 |
 | :--- | :--- |
 | 📄 **[chip.md](./md/chip.md)** | **芯片平台 & 双屏异显实战手册（主文档）**：双 Activity & Presentation 架构、D2 误启动硬件级反射重定向（`setLaunchDisplayId`）、生命周期与 `Process.killProcess` 进程清理、WiFi ADB 部署与踩坑全集。 |
 | 📄 **[dual-single-screen-launch-architecture.md](./md/dual-single-screen-launch-architecture.md)** | **双屏/单屏启动与连续画布架构**：从任意屏启动、公开 `launchDisplayId` 路由、一个渲染会话两块 Surface、触摸坐标、IME、退出联动、黑屏与抖动避坑及真机验收。 |
 | 📄 **[vibecoding-prompt.md](./md/vibecoding-prompt.md)** | **双屏 AI Vibe-Coding 系统提示词**：自包含的系统级 Prompt，涵盖硬件、双屏架构模板、防呆、生命周期、跨屏通信、键盘、录制、语音和编码铁律。粘贴到 AI 编程工具即可直接生成可编译的双屏 APK。 |
 | 📄 **[cross-display-keyboard.md](./md/cross-display-keyboard.md)** | **跨屏软键盘需求与设计**：双屏设备软键盘行为、状态模型、原生与 Flutter 职责边界，以及重构和验收标准。 |
-| 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **底层开发铁律**：约束 AI/开发者的核心准则（路径锁定 / 自测闭环交付 / 死磕到底 / 终局导向 / 低打扰协作），禁止用下一步计划代替立即行动，多智能体分工后非必要不互相打扰。 |
-| 📄 **[rule.md](./md/rule.md)** | **开发行为规范（CLAUDE.md）**：保持代码精简干净，外科手术式修改，严禁过度设计。 |
+| 📄 **[dev-iron-rules.md](./md/dev-iron-rules.md)** | **所有项目必读的底层开发铁律**：路径锁定 / 自测闭环交付 / 死磕到底 / 终局导向 / 低打扰协作 / 成熟方法继承，禁止用计划代替行动、无必要打扰协作者或遗忘已验证流程。 |
+| 📄 **[rule.md](./md/rule.md)** | **所有项目必读的开发行为规范（CLAUDE.md）**：保持代码精简干净、外科手术式修改，并优先复用和沉淀已验证工作流。 |
 | 📄 **[dscr.md](./md/dscr.md)** | **免弹窗无感双屏录制**：基于 `SurfaceControl.Transaction` 隐藏 API 的底层录影方案，直接绑定 SurfaceFlinger 图层栈自动灌帧硬编码，无需 `MediaProjection` 弹窗。 |
 | 📄 **[iflytek_asr_interface_doc.md](./md/iflytek_asr_interface_doc.md)** | **系统级语音听写指南**：基于 `Settings.Global` 凭证共享，无需应用申请 Key，支持"按住说话"（Hold-to-Speak）与"自动聆听"（Auto-Listen）状态机。 |
 | 📄 **[reseach.md](./md/reseach.md)** | **硬件算力与开源组合调研报告**：结合 V900/RK356x 芯片（6G RAM, 8核 A73, Mali-G52）精准评估 5 大双屏开源项目组合的 CPU/GPU 内存负载。 |
