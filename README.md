@@ -23,6 +23,8 @@ kemi-rd/
 ├── .gitignore
 ├── .github/
 │   └── workflows/                      # CI/CD 工作流
+├── must/
+│   └── 通用Manager研发监督与发布规范.md # 通用 Manager 管理与发布门禁
 └── md/                                 # 核心 Markdown 技术与规范文档
     ├── android-http-file-server.md     # Android 内置 HTTP 文件分发服务
     ├── hbbc-http-https-service-guide.md # PAD HTTP与HBBC云端HTTPS统一分工
@@ -49,6 +51,7 @@ kemi-rd/
 
 | 文档名称 | 核心职责与关键能力 |
 | :--- | :--- |
+| 📄 **[通用 Manager 研发监督与发布规范](./must/通用Manager研发监督与发布规范.md)** | **所有项目通用的 Manager 执行基线**：持续推进、低打扰协作、三次失败熔断、无人值守管理，以及 APP 使用最终产物完成本机可行验证后才能进入发布审批的门禁。 |
 | 📄 **[chip.md](./md/chip.md)** | **芯片平台 & 双屏异显实战手册（主文档）**：双 Activity & Presentation 架构、D2 误启动硬件级反射重定向（`setLaunchDisplayId`）、生命周期与 `Process.killProcess` 进程清理、WiFi ADB 部署与踩坑全集。 |
 | 📄 **[dual-single-screen-launch-architecture.md](./md/dual-single-screen-launch-architecture.md)** | **双屏/单屏启动与连续画布架构**：从任意屏启动、公开 `launchDisplayId` 路由、一个渲染会话两块 Surface、触摸坐标、IME、退出联动、黑屏与抖动避坑及真机验收。 |
 | 📄 **[vibecoding-prompt.md](./md/vibecoding-prompt.md)** | **双屏 AI Vibe-Coding 系统提示词**：自包含的系统级 Prompt，涵盖硬件、双屏架构模板、防呆、生命周期、跨屏通信、键盘、录制、语音和编码铁律。粘贴到 AI 编程工具即可直接生成可编译的双屏 APK。 |
